@@ -7,6 +7,7 @@ No hardware modifications are required.
 - [ ] Write NAND
 - [x] Lock/Unlock SD cards using slot A
 - [x] Read SRAM (partially working)
+- [x] Retrieve SD Card pin
 - [ ] Remove "antitheft" DRM
 
 ## Using the program
