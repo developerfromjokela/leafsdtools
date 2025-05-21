@@ -29,4 +29,6 @@ Have your SD card flashed with latest disk image available in releases.
 6. Once prompted a YES/NO dialog, remove SD from MAP Slot (B) and insert your own SD card with flashed image.
 7. Turn off the car and start it again.
 
-To exit from Software Update mode, insert stock SD card back and press YES when cancellation option comes available.
+To exit from Software Update mode, insert stock SD card back and press YES when cancellation option comes available.  
+
+**NOTE! Make sure your stock SD is locked before exiting update mode! Head Unit won't boot back if SD is unlocked.**
