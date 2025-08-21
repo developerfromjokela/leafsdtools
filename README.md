@@ -7,9 +7,8 @@ No hardware modifications are required.
 - [x] Backup NAND
 - [ ] Write NAND
 - [x] Lock/Unlock SD cards using slot A
-- [x] Read SRAM (partially working)
+- [x] Read&Write SRAM and VFlash (User Data)
 - [x] Retrieve SD Card pin
-- [ ] Remove "antitheft" DRM
 
 ## Using the program
 You'll need a full-size SD card (or micro-SD with an adapter), with at least 10 GB of capacity.
