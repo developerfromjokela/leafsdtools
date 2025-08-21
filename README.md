@@ -1,4 +1,5 @@
 # Leaf SD Tools
+<img src="https://github.com/developerfromjokela/leafsdtools/blob/master/leafsdtool.jpg" height="400">
 Modify, backup and unlock your Head Unit with all-in-one utility.
 No hardware modifications are required.
 
@@ -7,6 +8,7 @@ No hardware modifications are required.
 - [ ] Write NAND
 - [x] Lock/Unlock SD cards using slot A
 - [x] Read SRAM (partially working)
+- [x] Retrieve SD Card pin
 - [ ] Remove "antitheft" DRM
 
 ## Using the program
@@ -28,4 +30,6 @@ Have your SD card flashed with latest disk image available in releases.
 6. Once prompted a YES/NO dialog, remove SD from MAP Slot (B) and insert your own SD card with flashed image.
 7. Turn off the car and start it again.
 
-To exit from Software Update mode, insert stock SD card back and press YES when cancellation option comes available.
+To exit from Software Update mode, insert stock SD card back and press YES when cancellation option comes available.  
+
+**NOTE! Make sure your stock SD is locked before exiting update mode! Head Unit won't boot back if SD is unlocked.**
