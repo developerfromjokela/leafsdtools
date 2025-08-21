@@ -5,20 +5,16 @@
 #include "Display.h"
 #include "Touch.h"
 
-const char* sramLabels[] = {"READ ALL", "READ TCU APN", "***", "EXIT"};
+const char* sramLabels[] = {"DUMP TO SD", "RESTORE VFLASH", "RESTORE SRAM", "EXIT"};
 
-const BYTE connInfoSramAddresses[] = {
-	0x4a,
-	0x53
-};
 
 void RenderSRAMMenuOptions() {
     int y = 20;
     for (int i = 0; i < 4; i++) {
-        if (RenderButtonWithState(780, y, 150, 36, sramLabels[i], true) != 0) {
+        if (RenderButtonWithState(780, y, 180, 45, sramLabels[i], true) != 0) {
             break;
         }
-        y += 36 + 10; // Move down for next button
+        y += 40 + 20; // Move down for next button
     }
 }
 
@@ -40,255 +36,326 @@ int GetPressedSRAMButton(int x, int y, int x_right, int y_top, int w, int h, int
 void InitUserSRAMMainMenu(bool renderMenuOpts) {
 	ResetTextRenderer();
 	DrawBackground(0x0010);
-	AdjustBoundaries(770);
+	AdjustBoundaries(600);
 	WaitForScreenUntouch();
 	Sleep(50);
 	WaitForScreenUntouch();
 	Sleep(50);
-	PrintToScreen(2, "U s e r   S R A M");
-	PrintToScreen(1, "\n\nRead, write and modify SRAM data. Choose command\n\n");
+	PrintToScreen(2, "U s e r   D A T A");
+	PrintToScreen(1, "\n\nRead + write SRAM and VFlash data.\n\n");
 	if (renderMenuOpts)
 		RenderSRAMMenuOptions();
 	Sleep(50);
 }
 
-typedef DWORD (WINAPI *PFN_CApi_GetSramAllData)(void);
-typedef DWORD (WINAPI *PFN_CApi_GetSramVirtualAddress)(int, void**);
-typedef DWORD (WINAPI *PFN_CApi_CheckSramArea)(int);
+bool DumpBlockToFile(HANDLE flashDevice, FILE* output, BYTE* buffer, DWORD* ioControlInput, DWORD block) {
+	ioControlInput[0] = block;
+	ioControlInput[1] = 0;
+	DWORD bytesReturned;
+	// Call DeviceIoControl with dynamically allocated input buffer
+	BOOL devIOResult = DeviceIoControl(flashDevice, 0x80112000, ioControlInput, 8,
+								  buffer, 0x10000, &bytesReturned, NULL);
+	if (!devIOResult)
+	{
+		PrintToScreen(1, "DeviceIoControl failed!");
+		return false;
+	}
 
-void DumpAllSRAM(WCHAR* baseName) {
-    LogError(L"Starting DumpAllSRAM", 0);
-    PrintToScreen(1, "Loading COMMONDLL\n");
+	// Write data to the file
+	size_t bytesWritten = fwrite(buffer, 1, 0x10000, output);
+	if (bytesWritten != 0x10000)
+	{
+		PrintToScreen(1, "File write failed!");
+		return false;
+	}
+	return true;
+}
 
-    // Handle for the DLL
-    HMODULE hDll = NULL;
-    PFN_CApi_GetSramVirtualAddress pfnGetSramVirtualAddress = NULL;
-    PFN_CApi_CheckSramArea pfnCheckSramArea = NULL;
-    WCHAR logMessage[256];
-    void* sramAddress = NULL;
-    UINT size = 0;
+bool DumpBlocksToFile(HANDLE flashDevice, char* fileName, DWORD start, DWORD end) {
+	FILE* file = NULL;
+	DWORD bufferSize = 64 * 1024;
+	DWORD ioControlInputSize = 8;
+	BYTE* buffer = NULL;
+	DWORD* ioControlInput = NULL;
 
-    // Step 1: Load the DLL
-    hDll = LoadLibrary(L"commondll.dll");
-    if (hDll == NULL) {
-        wsprintf(logMessage, L"Failed to load commondll.dll. Error: %d", GetLastError());
-        LogError(logMessage, 1);
-        PrintToScreen(1, "Failed to load commondll.dll. Error: %d\n", GetLastError());
-        return;
-    }
+	// Allocate buffers dynamically
+	buffer = (BYTE*)malloc(bufferSize);
+	if (buffer == NULL)
+	{
+		PrintToScreen(1, "Failed to allocate buffer!");
+		return false;
+	}
 
-    // Step 2: Get function addresses
-    pfnGetSramVirtualAddress = (PFN_CApi_GetSramVirtualAddress)GetProcAddress(hDll, L"CApi_GetSramVirtualAddress");
-    pfnCheckSramArea = (PFN_CApi_CheckSramArea)GetProcAddress(hDll, L"CApi_CheckSramArea");
-    if (pfnGetSramVirtualAddress == NULL || pfnCheckSramArea == NULL) {
-        wsprintf(logMessage, L"Failed to get function addresses. Error: %d", GetLastError());
-        LogError(logMessage, 1);
-        PrintToScreen(1, "Failed to get function addresses. Error: %d\n", GetLastError());
-        FreeLibrary(hDll);
-        return;
-    }
+	ioControlInput = (DWORD*)malloc(ioControlInputSize);
+	if (ioControlInput == NULL)
+	{
+		PrintToScreen(1, "Failed to allocate ioControlInput!");
+		free(buffer);
+		return false;
+	}
 
-    // Step 3: Iterate through all possible selectors (0 to 0x100)
-    const DWORD REQUESTED_SIZE = 0x3FE0; // 16,128 bytes
-    for (BYTE selector = 0; selector <= 0x83; selector++) {
-        wsprintf(logMessage, L"Processing selector 0x%02X", selector);
-        LogError(logMessage, 0);
+	// Initialize buffers to zero
+	ZeroMemory(buffer, bufferSize);
+	ZeroMemory(ioControlInput, ioControlInputSize);
 
-		PrintToScreen(1, "\r >> %u / %u: 0,0", selector, 0xFF);
+	// Open the destination file in binary write mode
+	file = fopen(fileName, "wb");
+	if (file == NULL)
+	{
+		PrintToScreen(1, "Could not open file on SD for dumping");
+		free(buffer);
+		free(ioControlInput);
+		return false;
+	}
 
-		Sleep(200);
-        // Call CApi_GetSramVirtualAddress
-        size = pfnGetSramVirtualAddress((int)selector, &sramAddress);
-        wsprintf(logMessage, L"CApi_GetSramVirtualAddress(0x%02X) returned size: %u, address: 0x%08X", selector, size, (DWORD)sramAddress);
-        LogError(logMessage, 0);
+	PrintToScreen(1, ">> 0000000 / %u", (end-start) * bufferSize);
 
-		PrintToScreen(1, "\r >> %u / %u: %u,0x%08X", selector, 0xFF, size, (DWORD)sramAddress);
+	DWORD counter = start;
+	DWORD byteCounter = 0;
+	do
+	{
+		if (!DumpBlockToFile(flashDevice, file, buffer, ioControlInput, counter)) {
+			PrintToScreen(1, "\nFailed to read block! quitting..");
+		}
+		byteCounter += bufferSize;
+		PrintToScreen(1, "\r >> %u / %u", byteCounter, (end-start) * bufferSize);
+		counter++;
+	} while (counter < end);
 
-        // Check if size is non-zero and address is valid
-        if (size == 0 || sramAddress == NULL) {
-            wsprintf(logMessage, L"CApi_GetSramVirtualAddress failed (size: %u, address: 0x%08X)", size, (DWORD)sramAddress);
-            LogError(logMessage, 1);
-            continue;
-        }
+	fclose(file);
+	free(buffer);
+	free(ioControlInput);
+	PrintToScreen(1, "\nDone. Read %u bytes\n", byteCounter);
+	return true;
+}
 
-        // Call CApi_CheckSramArea
-        UINT checkResult = pfnCheckSramArea((int)selector);
-        wsprintf(logMessage, L"CApi_CheckSramArea(0x%02X) returned: %u", selector, checkResult);
-        LogError(logMessage, 0);
+// Helper function to log ioControlInput contents
+void LogIoControlInput(LPCWSTR context, DWORD* ioControlInput) {
+    WCHAR logBuffer[256];
+    wsprintfW(logBuffer, L"%s: [0x%08X, 0x%08X, 0x%08X, 0x%08X]", 
+              context, ioControlInput[0], ioControlInput[1], ioControlInput[2], ioControlInput[3]);
+    LogError(logBuffer, 0); // Use 0 as the second parameter since LogError expects a DWORD
+}
 
-        // Handle valid SRAM area
-        if (checkResult == 1) {
-            wsprintf(logMessage, L"Valid SRAM pointer: 0x%08X, size: %u bytes", (DWORD)sramAddress, size);
-            LogError(logMessage, 0);
+bool RestoreBlockFromFile(HANDLE flashDevice, FILE* file, BYTE* buffer, DWORD* ioControlInput, DWORD block) {
+	ZeroMemory(ioControlInput, 0x10);
 
-            // Determine dump size (smaller of returned size or REQUESTED_SIZE)
-            DWORD dumpSize = (size <= REQUESTED_SIZE) ? size : REQUESTED_SIZE;
-            if (IsBadReadPtr(sramAddress, dumpSize) == 0) {
-                wsprintf(logMessage, L"Pointer 0x%08X is readable for %u bytes", (DWORD)sramAddress, dumpSize);
-                LogError(logMessage, 0);
+	// Read block from file
+	size_t readBytes = fread(buffer, 1, 0x10000, file);
+	if (readBytes == 0) {
+		LogError(L"Read zero bytes!", readBytes);
+		return false;
+	}
 
-                // Log first DWORD for debugging
-                DWORD* pData = (DWORD*)sramAddress;
-                wsprintf(logMessage, L"First DWORD at pointer: 0x%08X", *pData);
-                LogError(logMessage, 0);
+	if (LOG_FLASH_WRITING)
+		LogError(L"Read bytes from backup", readBytes);
 
-                LPVOID tempBuffer = LocalAlloc(LPTR, dumpSize);
-                if (tempBuffer == NULL) {
-                    wsprintf(logMessage, L"Failed to allocate temporary buffer for %u bytes. Error: %d", dumpSize, GetLastError());
-                    LogError(logMessage, 1);
-                    PrintToScreen(1, "Failed to allocate temporary buffer for %u bytes. Error: %d\n", dumpSize, GetLastError());
-                    continue;
-                }
+	if (readBytes != 0x10000) {
+		LogError(L"WRITE BLOCK ERROR", block);
+		LogError(L"Block size was not expected", readBytes);
+		return false;
+	}
 
-                // Copy SRAM data to temporary buffer
-                memcpy(tempBuffer, sramAddress, dumpSize);
 
-                // Generate file name with baseName and selector
-                WCHAR sramFileName[260] = {0};
-                wsprintf(sramFileName, L"%s_sram_0x%02X.bin", baseName, selector);
+	// Erase block
+	ioControlInput[0] = block;
+	ioControlInput[1] = 1;
 
-                // Dump the temporary buffer to a file
-                HANDLE hFile = CreateFile(sramFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-                if (hFile == INVALID_HANDLE_VALUE) {
-                    wsprintf(logMessage, L"Failed to create dump file %s. Error: %d", sramFileName, GetLastError());
-                    LogError(logMessage, 1);
-                    PrintToScreen(1, "Failed to create dump file %s. Error: %d\n", sramFileName, GetLastError());
-                    LocalFree(tempBuffer);
-                    continue;
-                }
+	if (LOG_FLASH_WRITING)
+		LogIoControlInput(L"ioControlInput for erase", ioControlInput);
 
-                DWORD bytesWritten;
-                BOOL success = WriteFile(hFile, tempBuffer, dumpSize, &bytesWritten, NULL);
-                CloseHandle(hFile);
+	if (!DeviceIoControl(flashDevice, 0x8011200C, ioControlInput, 8,
+						 0, 0, NULL, NULL)) {
+		LogError(L"Cannot erase flash!", GetLastError());
+		return false;
+	}
 
-                if (success && bytesWritten == dumpSize) {
-                    wsprintf(logMessage, L"Successfully dumped %u bytes to %s", dumpSize, sramFileName);
-                    LogError(logMessage, 0);
-                } else {
-                    wsprintf(logMessage, L"Failed to dump data to %s. Bytes written: %u, Error: %d", sramFileName, bytesWritten, GetLastError());
-                    LogError(logMessage, 1);
-                    PrintToScreen(1, "Failed to dump data to %s. Bytes written: %u, Error: %d\n", sramFileName, bytesWritten, GetLastError());
-                }
+	// Write block
+	ZeroMemory(ioControlInput, 0x10);
 
-                // Free the temporary buffer
-                LocalFree(tempBuffer);
-            } else {
-                wsprintf(logMessage, L"Pointer 0x%08X is not readable for %u bytes", (DWORD)sramAddress, dumpSize);
-                LogError(logMessage, 1);
-                PrintToScreen(1, "\nPointer 0x%08X is not readable for %u bytes\n", (DWORD)sramAddress, dumpSize);
-            }
-        } else {
-            wsprintf(logMessage, L"Invalid SRAM area for selector 0x%02X", selector);
-            LogError(logMessage, 1);
-            PrintToScreen(1, "\nInvalid SRAM area for selector 0x%02X\n", selector);
-        }
+	DWORD resultDwords[2] = {0, 0};
+	ioControlInput[0] = block;
+	ioControlInput[1] = 0x10000;
+	ioControlInput[2] = (DWORD)buffer;
+	ioControlInput[3] = (DWORD)resultDwords;
 
-        Sleep(100); // Brief delay to avoid overwhelming the UI or hardware
-    }
+	if (LOG_FLASH_WRITING)
+		LogIoControlInput(L"ioControlInput for write", ioControlInput);
 
-    // Step 4: Finalize
-    wsprintf(logMessage, L"Completed dumping all SRAM regions");
-    LogError(logMessage, 0);
-    PrintToScreen(1, "Completed dumping all SRAM regions\n");
-    FreeLibrary(hDll);
-    Sleep(4000);
+	if (!DeviceIoControl(flashDevice, 0x80112004, ioControlInput, 0x10,
+						 0, 0, NULL, NULL)) {
+		LogError(L"Cannot write flash!", GetLastError());
+		return false;
+	}
+
+
+	if (LOG_FLASH_WRITING) {
+		LogError(L"FLASH WRITE RESULT1: ", resultDwords[0]);
+		LogError(L"FLASH WRITE RESULT2: ", resultDwords[1]);
+	}
+
+	if (resultDwords[0] != 0x10000) return false;
+
+	return true;
+}
+
+bool RestoreBlocksFromFile(HANDLE flashDevice, char* fileName, DWORD start, DWORD end) {
+	FILE* backupFile = fopen(fileName, "rb");
+	DWORD bufferSize = 64 * 1024;
+	DWORD ioControlInputSize = 0x10;
+	bool backupFileValid = false;
+	long fileSize = 0;
+	DWORD byteCounter = 0;
+
+	if (backupFile != NULL) {
+		fseek(backupFile, 0, SEEK_END);
+		fileSize = ftell(backupFile);
+		LogError(L"FileSize:", fileSize);
+		LogError(L"Expected FileSize:", (end-start)*0x10000);
+		backupFileValid = (fileSize >= (end-start)*0x10000);
+	}
+
+	if (!backupFileValid) {
+		PrintToScreen(1, "Valid backup file not found! Cannot continue.\n");
+		fclose(backupFile);
+		return false;
+	} else {
+		BYTE* buffer = (BYTE*)malloc(bufferSize);
+		if (buffer == NULL)
+		{
+			fclose(backupFile);
+			PrintToScreen(1, "Failed to allocate buffer!");
+			return false;
+		}
+
+		ZeroMemory(buffer, 0x10000);
+
+		DWORD* ioControlInput = (DWORD*)malloc(ioControlInputSize);
+		if (ioControlInput == NULL)
+		{
+			PrintToScreen(1, "Failed to allocate ioControlInput!");
+			free(buffer);
+			fclose(backupFile);
+			return false;
+		}
+		ZeroMemory(ioControlInput, ioControlInputSize);
+
+		fseek(backupFile, 0, SEEK_SET);
+
+		PrintToScreen(1, ">> 0000000 / %u", (end-start) * bufferSize);
+
+		DWORD counter = start;
+		do
+		{
+			if (!RestoreBlockFromFile(flashDevice, backupFile, buffer, ioControlInput, counter)) {
+				PrintToScreen(1, "\nFailed to write block! quitting..");
+				break;
+			}
+			byteCounter += bufferSize;
+			PrintToScreen(1, "\r >> %u / %u", byteCounter, (end-start) * bufferSize);
+			counter++;
+		} while (counter < end);
+
+		free(buffer);
+		free(ioControlInput);
+
+		PrintToScreen(1, "\nWrote %u bytes\n", byteCounter);
+	}
+
+	fclose(backupFile);
+	return ((end-start)*bufferSize) == byteCounter;
+}
+
+void DumpUserData(BYTE* serial, BYTE* productId) {
+	LogError(L"Start SRAM read!", 0);
+
+	// Open the flash device (FMD1:)
+	HANDLE hDevice = CreateFileW(L"FMD1:", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+	if (hDevice == INVALID_HANDLE_VALUE)
+	{
+		PrintToScreen(1, "Could not open flash device!");
+		Sleep(5000);
+		WaitForScreenUntouch();
+		return;
+	}
+
+	char fileName[260] = {0};
+	sprintf(fileName, "\\SystemSD\\sram_%02X%02X%02X%02X_%02X%02X%02X%02X.bin", 
+		((BYTE*)productId)[0], ((BYTE*)productId)[1], ((BYTE*)productId)[2], ((BYTE*)productId)[3],
+		((BYTE*)serial)[0], ((BYTE*)serial)[1], ((BYTE*)serial)[2], ((BYTE*)serial)[3]);
+	PrintToScreen(1, "Reading SRAM to file:\n %s\n", fileName);
+	Sleep(1000);
+
+	if (DumpBlocksToFile(hDevice, fileName, 0x47, 0x57)) {
+		memset(fileName, 0, 260);
+		sprintf(fileName, "\\SystemSD\\vflash_%02X%02X%02X%02X_%02X%02X%02X%02X.bin", 
+			((BYTE*)productId)[0], ((BYTE*)productId)[1], ((BYTE*)productId)[2], ((BYTE*)productId)[3],
+			((BYTE*)serial)[0], ((BYTE*)serial)[1], ((BYTE*)serial)[2], ((BYTE*)serial)[3]);
+		PrintToScreen(1, "Reading VFlash to file:\n %s\n", fileName);
+		Sleep(1000);
+		DumpBlocksToFile(hDevice, (char*)fileName, 0x57, 0x85);
+	}
+
+	CloseHandle(hDevice);
+    Sleep(5000);
 	WaitForScreenUntouch();
 }
 
-// Function to dump SRAM data to a file
-void DumpSramDataToFile(void* ptr, DWORD size, const WCHAR* filename) {
-    HANDLE hFile = CreateFile(filename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (hFile == INVALID_HANDLE_VALUE) {
-        WCHAR logMessage[256];
-        wsprintf(logMessage, L"Failed to create dump file %s. Error: %d", filename, GetLastError());
-        LogError(logMessage, 1);
-        PrintToScreen(1, "Failed to create dump file %s. Error: %d\n", filename, GetLastError());
-        return;
-    }
+void RestoreVFlash(BYTE* serial, BYTE* productId) {
+	LogError(L"Start VFlash write!", 0);
 
-    DWORD bytesWritten;
-    BOOL success = WriteFile(hFile, ptr, size, &bytesWritten, NULL);
-    CloseHandle(hFile);
+	// Open the flash device (FMD1:)
+	HANDLE hDevice = CreateFileW(L"FMD1:", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+	if (hDevice == INVALID_HANDLE_VALUE)
+	{
+		PrintToScreen(1, "Could not open flash device!");
+		Sleep(5000);
+		WaitForScreenUntouch();
+		return;
+	}
 
-    WCHAR logMessage[256];
-    if (success && bytesWritten == size) {
-        wsprintf(logMessage, L"Successfully dumped %u bytes to %s", size, filename);
-        LogError(logMessage, 0);
-        PrintToScreen(1, "Successfully dumped %u bytes to %s\n", size, filename);
-    } else {
-        wsprintf(logMessage, L"Failed to dump data to %s. Bytes written: %u, Error: %d", filename, bytesWritten, GetLastError());
-        LogError(logMessage, 1);
-        PrintToScreen(1, "Failed to dump data to %s. Bytes written: %u, Error: %d\n", filename, bytesWritten, GetLastError());
-    }
+	char fileName[260] = {0};
+	sprintf(fileName, "\\SystemSD\\vflash_%02X%02X%02X%02X_%02X%02X%02X%02X.bin", 
+		((BYTE*)productId)[0], ((BYTE*)productId)[1], ((BYTE*)productId)[2], ((BYTE*)productId)[3],
+		((BYTE*)serial)[0], ((BYTE*)serial)[1], ((BYTE*)serial)[2], ((BYTE*)serial)[3]);
+	PrintToScreen(1, "Restoring VFlash from file:\n %s\n", fileName);
+	Sleep(1000);
+
+	RestoreBlocksFromFile(hDevice, (char*) fileName, 0x57, 0x85);
+
+	CloseHandle(hDevice);
+    Sleep(5000);
+	WaitForScreenUntouch();
 }
 
-void DumpTCUAPNSram(WCHAR* baseName) {
-    LogError(L"Starting DumpTCUAPNSram", 0);
-    HMODULE hDll = NULL;
-    PFN_CApi_GetSramVirtualAddress pfnGetSramVirtualAddress = NULL;
-    PFN_CApi_CheckSramArea pfnCheckSramArea = NULL;
-    DWORD result = 0;
-    WCHAR logMessage[256];
-    void* sramAddress = NULL;
+void RestoreSRAM(BYTE* serial, BYTE* productId) {
+	LogError(L"Start SRAM write!", 0);
 
-    // Step 1: Load commondll.dll
-    hDll = LoadLibrary(L"commondll.dll");
-    if (hDll == NULL) {
-        LogError(L"Failed to load commondll.dll. Error:", GetLastError());
-        PrintToScreen(1, "Failed to load commondll.dll. Error: %d\n", GetLastError());
-        return;
-    }
+	// Open the flash device (FMD1:)
+	HANDLE hDevice = CreateFileW(L"FMD1:", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+	if (hDevice == INVALID_HANDLE_VALUE)
+	{
+		PrintToScreen(1, "Could not open flash device!");
+		Sleep(5000);
+		WaitForScreenUntouch();
+		return;
+	}
 
-    // Step 2: Get function addresses
-    pfnGetSramVirtualAddress = (PFN_CApi_GetSramVirtualAddress)GetProcAddress(hDll, L"CApi_GetSramVirtualAddress");
-    pfnCheckSramArea = (PFN_CApi_CheckSramArea)GetProcAddress(hDll, L"CApi_CheckSramArea");
-    if (pfnGetSramVirtualAddress == NULL || pfnCheckSramArea == NULL) {
-        LogError(L"Failed to get func address. Error:", GetLastError());
-        PrintToScreen(1, "Failed to get func address. Error: %d\n", GetLastError());
-        FreeLibrary(hDll);
-        return;
-    }
+	char fileName[260] = {0};
+	sprintf(fileName, "\\SystemSD\\sram_%02X%02X%02X%02X_%02X%02X%02X%02X.bin", 
+		((BYTE*)productId)[0], ((BYTE*)productId)[1], ((BYTE*)productId)[2], ((BYTE*)productId)[3],
+		((BYTE*)serial)[0], ((BYTE*)serial)[1], ((BYTE*)serial)[2], ((BYTE*)serial)[3]);
+	PrintToScreen(1, "Restoring SRAM from file:\n %s\n", fileName);
+	Sleep(1000);
 
-    const DWORD SRAM_SIZE = 0x3FE0; // 16,128 bytes
-    for (int i = 0; i < sizeof(connInfoSramAddresses); i++) {
-        WORD address = connInfoSramAddresses[i];
-        LogError(L"Using address", address);
-        PrintToScreen(1, "Attempting address 0x%02X\n", address);
-        DWORD checkResult = pfnCheckSramArea(address);
-        LogError(L"CheckSramArea Returned:", checkResult);
-        PrintToScreen(1, "CheckSRAMArea Returned: 0x%08X\n", checkResult);
-        result = pfnGetSramVirtualAddress(address, &sramAddress);
-        LogError(L"Returned:", result);
-        LogError(L"Address:", (DWORD)sramAddress);
-        PrintToScreen(1, "Returned: 0x%08X, address: 0x%08X\n", result, (DWORD)sramAddress);
+	RestoreBlocksFromFile(hDevice, (char*) fileName, 0x47, 0x57);
 
-        // Check if pointer is readable for 0x3FE0 bytes and dump to file
-        if (IsBadReadPtr(sramAddress, SRAM_SIZE) == 0) {
-            wsprintf(logMessage, L"Pointer 0x%08X is readable for 0x%X bytes", result, SRAM_SIZE);
-            LogError(logMessage, 0);
-            PrintToScreen(1, "Pointer 0x%08X is readable for 0x%X bytes\n", result, SRAM_SIZE);
-           
-            // Log first DWORD for debugging
-            DWORD* pData = (DWORD*)sramAddress;
-            LogError(L"First DWORD at pointer: ", *pData);
-            PrintToScreen(1, "First DWORD at pointer: 0x%08X\n", *pData);
-
-            WCHAR sramFileName[260] = {0};
-            wsprintf(sramFileName, L"%s_tcuapn_0x%02X.bin", baseName, address);
-
-            // Dump the data to a file
-            DumpSramDataToFile(sramAddress, SRAM_SIZE, sramFileName);
-        } else {
-            wsprintf(logMessage, L"Pointer 0x%08X is not readable for 0x%X bytes", result, SRAM_SIZE);
-            LogError(logMessage, 1);
-            PrintToScreen(1, "Pointer 0x%08X is not readable for 0x%X bytes\n", result, SRAM_SIZE);
-        }
-
-        Sleep(1000);
-    }
-
-    FreeLibrary(hDll);
+	CloseHandle(hDevice);
+    Sleep(5000);
+	WaitForScreenUntouch();
 }
+
+
 
 void RunUserSRAM() {
     InitUserSRAMMainMenu(true);
@@ -300,11 +367,6 @@ void RunUserSRAM() {
         LogError(L"GetProdSection fail!", prodResult);
         PrintToScreen(1, "Could not read device section: %u\n", prodResult);
     } else {
-        WCHAR sramBaseFileName[260] = {0};
-        wsprintf(sramBaseFileName, L"\\SystemSD\\%02X%02X%02X%02X_%02X%02X%02X%02X", 
-            ((BYTE*)productId)[0], ((BYTE*)productId)[1], ((BYTE*)productId)[2], ((BYTE*)productId)[3],
-            ((BYTE*)serial)[0], ((BYTE*)serial)[1], ((BYTE*)serial)[2], ((BYTE*)serial)[3]);
-
         bool quitAction = false;
 
         while (!quitAction) {
@@ -315,7 +377,7 @@ void RunUserSRAM() {
                 LCDTouchEvent* touchEvt = WaitForTouch(INFINITE);
                 if (touchEvt != NULL) {
                     if (btn == -1) {
-                        btn = GetPressedSRAMButton(touchEvt->xCoord, touchEvt->yCoord, 780, 20, 150, 36, 10, 4);
+                        btn = GetPressedSRAMButton(touchEvt->xCoord, touchEvt->yCoord, 780, 20, 180, 45, 20, 4);
                     }
                 } else if (btn != -1) {
                     // Once user has lifted their finger off / touch events have stopped, continue.
@@ -326,11 +388,14 @@ void RunUserSRAM() {
 			WaitForScreenUntouch();
             switch (btn) {
                 case 0:
-                    DumpAllSRAM(sramBaseFileName);
+                    DumpUserData((BYTE*)serial, (BYTE*)productId);
                     break;
-                case 1:
-                    DumpTCUAPNSram(sramBaseFileName);
-                    break;
+				case 1:
+					RestoreVFlash((BYTE*)serial, (BYTE*)productId);
+					break;
+				case 2:
+					RestoreSRAM((BYTE*)serial, (BYTE*)productId);
+					break;
                 case 3:
                     quitAction = true;
                     break;

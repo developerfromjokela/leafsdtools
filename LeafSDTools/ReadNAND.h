@@ -1,6 +1,6 @@
 #ifndef READNAND_H
 #define READNAND_H
 
-void RunReadNAND();
+void RunReadNAND(BOOL unattend);
 
 #endif

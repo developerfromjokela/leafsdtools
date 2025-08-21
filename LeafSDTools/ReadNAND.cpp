@@ -5,7 +5,7 @@
 #include "Display.h"
 #include "Touch.h"
 
-void RunReadNAND() {
+void RunReadNAND(BOOL unattend) {
 	ResetTextRenderer();
 	DrawBackground(0x0010);
 	WaitForScreenUntouch();
@@ -16,7 +16,7 @@ void RunReadNAND() {
 	PrintToScreen(1, "\n\nTouch the screen to continue\nor wait 10 sec to return\n");
 	LogError(L"WaitForTouch!", 0);
 	LCDTouchEvent* evt = WaitForTouch(10000);
-	if (evt != NULL) {
+	if (evt != NULL || unattend) {
 		int counter = 0;
 		BYTE serial[4] = {0};
 		BYTE productId[4] = {0};

@@ -7,8 +7,6 @@
 #include "UserSRAM.h"
 #include "SDPinControl.h"
 
-#define TOOL_VERSION "101-beta"
-
 const char* labels[] = {"Read NAND", "Write NAND", "SRAM", "SD lock", "SD unlock"};
 
 char* wchar_to_ascii(const wchar_t* wchar_str) {
@@ -33,10 +31,10 @@ void RenderMenuOptions() {
     int y = 20;
 
     for (int i = 0; i < 5; i++) {
-        if (RenderButton(780, y, 180, 70, labels[i]) != 0) {
+        if (RenderButton(780, y, 180, 65, labels[i]) != 0) {
             break;
         }
-        y += 70 + 10; // Move down for next button
+        y += 65 + 10; // Move down for next button
     }
 }
 
@@ -105,13 +103,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
 			}
 
 			Sleep(400);
+
+			// check for file flag commands
+			DWORD dmpAttrib = GetFileAttributes(L"\\SystemSD\\dumpnand.txt");
+            BOOL dumpNandExists = (dmpAttrib != INVALID_FILE_ATTRIBUTES && !(dmpAttrib & FILE_ATTRIBUTE_DIRECTORY));
+
+			if (dumpNandExists) {
+				RunReadNAND(true);
+			}
+
 			RenderMenuOptions();
 			int btn = -1;
 			while (TRUE) {
 				LCDTouchEvent* touchEvt = WaitForTouch(INFINITE);
 				if (touchEvt != NULL) {
 					if (btn == -1) {
-						btn = GetPressedButton(touchEvt->xCoord, touchEvt->yCoord, 780, 20, 180, 70, 10, 5);
+						btn = GetPressedButton(touchEvt->xCoord, touchEvt->yCoord, 780, 20, 180, 65, 10, 5);
 					}
 				} else if (btn != -1) {
 					// Once user has lifted their finger off / touch events have stopped, continue.
@@ -122,7 +129,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
 
 			switch (btn) {
 			case 0:
-				RunReadNAND();
+				RunReadNAND(false);
 				break;
 			case 1:
 				RunWriteNAND();

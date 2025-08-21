@@ -55,7 +55,7 @@ RSC=rc.exe
 # ADD RSC /l 0x409 /d UNDER_CE=$(CEVersion) /d _WIN32_WCE=$(CEVersion) /d "NDEBUG" /d "UNICODE" /d "_UNICODE" /d "$(CePlatform)" /d "SHx" /d "SH4" /d "_SH4_" /r
 CPP=shcl.exe
 # ADD BASE CPP /nologo /W3 /D _WIN32_WCE=$(CEVersion) /D "$(CePlatform)" /D "SHx" /D "SH4" /D "_SH4_" /D UNDER_CE=$(CEVersion) /D "UNICODE" /D "_UNICODE" /D "NDEBUG" /Yu"stdafx.h" /Qsh4 /O2 /M$(CECrtMT) /c
-# ADD CPP /nologo /W3 /D _WIN32_WCE=$(CEVersion) /D "$(CePlatform)" /D "SHx" /D "SH4" /D "_SH4_" /D UNDER_CE=$(CEVersion) /D "UNICODE" /D "_UNICODE" /D "NDEBUG" /Yu"stdafx.h" /Qsh4 /O2 /M$(CECrtMT) /c
+# ADD CPP /nologo /W3 /D _WIN32_WCE=$(CEVersion) /D "$(CePlatform)" /D "SHx" /D "SH4" /D "_SH4_" /D UNDER_CE=$(CEVersion) /D "UNICODE" /D "_UNICODE" /D "NDEBUG" /FR /Yu"stdafx.h" /Qsh4 /O2 /M$(CECrtMT) /c
 MTL=midl.exe
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /o "NUL" /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /o "NUL" /win32
@@ -497,13 +497,15 @@ DEP_CPP_USERS=\
 	".\StdAfx.h"\
 	".\Touch.h"\
 	".\UserSRAM.h"\
-	{$(INCLUDE)}"CeBus.h"\
-	{$(INCLUDE)}"ceddk.h"\
-	{$(INCLUDE)}"ddkmacro.h"\
-	{$(INCLUDE)}"ntstatus.h"\
-	{$(INCLUDE)}"pkfuncs.h"\
-	{$(INCLUDE)}"pm.h"\
-	{$(INCLUDE)}"toolhelp.h"\
+	{$(INCLUDE)}"kfuncs.h"\
+	
+NODEP_CPP_USERS=\
+	".\dkmacro.h"\
+	".\eBus.h"\
+	".\eddk.h"\
+	".\m.h"\
+	".\oolhelp.h"\
+	".\tstatus.h"\
 	
 
 !ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE emulator) Release"
@@ -515,11 +517,13 @@ DEP_CPP_USERS=\
 	".\StdAfx.h"\
 	".\Touch.h"\
 	".\UserSRAM.h"\
-	{$(INCLUDE)}"CeBus.h"\
-	{$(INCLUDE)}"ceddk.h"\
-	{$(INCLUDE)}"ddkmacro.h"\
-	{$(INCLUDE)}"ntstatus.h"\
-	{$(INCLUDE)}"pm.h"\
+	
+NODEP_CPP_USERS=\
+	".\dkmacro.h"\
+	".\eBus.h"\
+	".\eddk.h"\
+	".\m.h"\
+	".\tstatus.h"\
 	
 
 !ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE emulator) Debug"
@@ -531,11 +535,13 @@ DEP_CPP_USERS=\
 	".\StdAfx.h"\
 	".\Touch.h"\
 	".\UserSRAM.h"\
-	{$(INCLUDE)}"CeBus.h"\
-	{$(INCLUDE)}"ceddk.h"\
-	{$(INCLUDE)}"ddkmacro.h"\
-	{$(INCLUDE)}"ntstatus.h"\
-	{$(INCLUDE)}"pm.h"\
+	
+NODEP_CPP_USERS=\
+	".\dkmacro.h"\
+	".\eBus.h"\
+	".\eddk.h"\
+	".\m.h"\
+	".\tstatus.h"\
 	
 
 !ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE x86) Release"
@@ -547,11 +553,13 @@ DEP_CPP_USERS=\
 	".\StdAfx.h"\
 	".\Touch.h"\
 	".\UserSRAM.h"\
-	{$(INCLUDE)}"CeBus.h"\
-	{$(INCLUDE)}"ceddk.h"\
-	{$(INCLUDE)}"ddkmacro.h"\
-	{$(INCLUDE)}"ntstatus.h"\
-	{$(INCLUDE)}"pm.h"\
+	
+NODEP_CPP_USERS=\
+	".\dkmacro.h"\
+	".\eBus.h"\
+	".\eddk.h"\
+	".\m.h"\
+	".\tstatus.h"\
 	
 
 !ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE x86) Debug"
@@ -563,11 +571,13 @@ DEP_CPP_USERS=\
 	".\StdAfx.h"\
 	".\Touch.h"\
 	".\UserSRAM.h"\
-	{$(INCLUDE)}"CeBus.h"\
-	{$(INCLUDE)}"ceddk.h"\
-	{$(INCLUDE)}"ddkmacro.h"\
-	{$(INCLUDE)}"ntstatus.h"\
-	{$(INCLUDE)}"pm.h"\
+	
+NODEP_CPP_USERS=\
+	".\dkmacro.h"\
+	".\eBus.h"\
+	".\eddk.h"\
+	".\m.h"\
+	".\tstatus.h"\
 	
 
 !ENDIF 
@@ -604,12 +614,12 @@ DEP_CPP_WRITE=\
 	".\ReadNAND.h"\
 	".\StdAfx.h"\
 	".\Touch.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_WRITE=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\

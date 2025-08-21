@@ -482,10 +482,10 @@ int RenderButton(int x_right, int y_top, int w, int h, const char* text) {
 
     // Center text
     int text_len = strlen(text);
-    int text_width = text_len * 15 * scale;
-    int text_height = 22 * scale;
-    int text_x = x + (w - text_width) / 2;
-    int text_y = y + (h - text_height) / 2;
+    int text_width = text_len * g_charWidth * scale;
+    int text_height = g_charHeight * scale;
+    int text_x = x + (int)((w - text_width) / 2.0);
+    int text_y = y + (int)((h - text_height) / 2.0);
 
     if (RenderBtnText(text_x, text_y, text, COLOR_BLACK, scale, pixels) != 0) goto error;
 
@@ -532,10 +532,10 @@ int RenderButtonWithState(int x_right, int y_top, int w, int h, const char* text
 
     // Center text
     int text_len = strlen(text);
-    int text_width = text_len * 15 * scale;
-    int text_height = 22 * scale;
-    int text_x = x + (w - text_width) / 2;
-    int text_y = y + (h - text_height) / 2;
+    int text_width = text_len * g_charWidth * scale;
+    int text_height = g_charHeight * scale;
+    int text_x = x + (int)((w - text_width) / 2.0);
+    int text_y = y + (int)((h - text_height) / 2.0);
 
     if (RenderBtnText(text_x, text_y, text, state ? COLOR_BLACK : COLOR_WHITE, scale, pixels) != 0) goto error;
 

@@ -270,7 +270,7 @@ void RunWriteNAND() {
 
 					int blockIndex = 8;
 					int blockCounter = 0;
-					BYTE dummyOut[4] = {0};
+					BYTE dummyOut[2] = {0};
 					BOOL success = TRUE;
 
 					while (blockIndex < 0x87)  // Loop from page 8 to 134 (0x86)
@@ -311,10 +311,10 @@ void RunWriteNAND() {
 						// Second DeviceIoControl: write to flash area
 						struct {
 							DWORD page;
-							DWORD cmd;
+							DWORD size;
 							void *data;
 							void *unused;
-						} flashWrite = { blockIndex, 0, buffer, dummyOut };
+						} flashWrite = { blockIndex, 0x10000, buffer, dummyOut };
 
 						if (!DeviceIoControl(hDevice, 0x80112004, &flashWrite, sizeof(flashWrite),
 											 0, 0, NULL, NULL)) {

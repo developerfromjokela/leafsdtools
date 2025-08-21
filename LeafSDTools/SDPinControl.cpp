@@ -35,16 +35,18 @@ void RunSDPinControl(bool lock) {
 				PrintToScreen(1, "Could not retrieve Unit SD Pin, cannot continue.\n");
 				Sleep(4000);
 			} else {
-				char pinHex[50] = {0};
-				char* pinhexPtr = pinHex;
+				char pinHex[50] = {0}; // Buffer for 16 bytes (up to 48 chars + null)
+				int pos = 0; // Current position in pinHex
 				for (int pinByte = 0; pinByte < 0x10; pinByte++) {
-					sprintf(pinhexPtr, "%02X", pinCode[pinByte]);
-					pinhexPtr += 2;
-					if (pinByte < 0x10 - 1) {
-						*pinhexPtr++ = ' ';
+					if (isprint(pinCode[pinByte]) && pinByte > 3) {
+						// Printable ASCII: append the character itself
+						pinHex[pos++] = pinCode[pinByte];
+					} else {
+						// Non-printable: append two-digit hex
+						pos += sprintf(&pinHex[pos], "%02X", pinCode[pinByte]);
 					}
 				}
-				PrintToScreen(1, "Using PIN %s\n", pinhexPtr);	
+				PrintToScreen(1, "Using PIN %s\n", pinHex);	
 				PrintToScreen(1, "%sing", (lock ? "Lock" : "Unlock"));
 				InitSDCards();
 				Sleep(200);
