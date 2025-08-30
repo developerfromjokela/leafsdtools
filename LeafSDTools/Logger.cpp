@@ -56,8 +56,12 @@ void LogBufferContents(LPCWSTR prefix, DWORD* buffer, int size) {
     LogError(bufferLog, 0);
 }
 
-void CleanupLog(void) {
+/*
+Flush and close log buffer
+*/
+void CleanupLog() {
     if (hLogFile != INVALID_HANDLE_VALUE) {
+		FlushFileBuffers(hLogFile);
         CloseHandle(hLogFile);
         hLogFile = INVALID_HANDLE_VALUE;
     }

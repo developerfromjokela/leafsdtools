@@ -6,8 +6,9 @@
 #include "WriteNAND.h"
 #include "UserSRAM.h"
 #include "SDPinControl.h"
+#include "ExitUpdateMode.h"
 
-const char* labels[] = {"Read NAND", "Write NAND", "SRAM", "SD lock", "SD unlock"};
+const char* labels[] = {"Read NAND", "Write NAND", "SRAM", "SD lock", "SD unlock", "EXIT UPDATE"};
 
 char* wchar_to_ascii(const wchar_t* wchar_str) {
     if (!wchar_str) return NULL;
@@ -30,7 +31,7 @@ void RenderMenuOptions() {
 
     int y = 20;
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 6; i++) {
         if (RenderButton(780, y, 180, 65, labels[i]) != 0) {
             break;
         }
@@ -118,14 +119,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
 				LCDTouchEvent* touchEvt = WaitForTouch(INFINITE);
 				if (touchEvt != NULL) {
 					if (btn == -1) {
-						btn = GetPressedButton(touchEvt->xCoord, touchEvt->yCoord, 780, 20, 180, 65, 10, 5);
+						btn = GetPressedButton(touchEvt->xCoord, touchEvt->yCoord, 780, 20, 180, 65, 10, 6);
 					}
 				} else if (btn != -1) {
 					// Once user has lifted their finger off / touch events have stopped, continue.
 					break;
 				}
 			}
-
 
 			switch (btn) {
 			case 0:
@@ -142,6 +142,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
 				break;
 			case 4:
 				RunSDPinControl(false);
+				break;
+			case 5:
+				RunExitUpdate();
 				break;
 			default:
 				continue;

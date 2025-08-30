@@ -244,6 +244,101 @@ LINK32=link.exe
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=.\ExitUpdateMode.cpp
+
+!IF  "$(CFG)" == "LeafSDTools - Win32 (WCE SH4) Release"
+
+DEP_CPP_EXITU=\
+	".\Display.h"\
+	".\ExitUpdateMode.h"\
+	".\Logger.h"\
+	".\StdAfx.h"\
+	{$(INCLUDE)}"CeBus.h"\
+	{$(INCLUDE)}"ceddk.h"\
+	{$(INCLUDE)}"ddkmacro.h"\
+	{$(INCLUDE)}"ntstatus.h"\
+	{$(INCLUDE)}"pkfuncs.h"\
+	{$(INCLUDE)}"pm.h"\
+	{$(INCLUDE)}"toolhelp.h"\
+	
+
+!ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE SH4) Debug"
+
+DEP_CPP_EXITU=\
+	".\Display.h"\
+	".\ExitUpdateMode.h"\
+	".\Logger.h"\
+	".\StdAfx.h"\
+	{$(INCLUDE)}"CeBus.h"\
+	{$(INCLUDE)}"ceddk.h"\
+	{$(INCLUDE)}"ddkmacro.h"\
+	{$(INCLUDE)}"ntstatus.h"\
+	{$(INCLUDE)}"pkfuncs.h"\
+	{$(INCLUDE)}"pm.h"\
+	{$(INCLUDE)}"toolhelp.h"\
+	
+
+!ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE emulator) Release"
+
+DEP_CPP_EXITU=\
+	".\Display.h"\
+	".\ExitUpdateMode.h"\
+	".\Logger.h"\
+	".\StdAfx.h"\
+	{$(INCLUDE)}"CeBus.h"\
+	{$(INCLUDE)}"ceddk.h"\
+	{$(INCLUDE)}"ddkmacro.h"\
+	{$(INCLUDE)}"ntstatus.h"\
+	{$(INCLUDE)}"pm.h"\
+	
+
+!ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE emulator) Debug"
+
+DEP_CPP_EXITU=\
+	".\Display.h"\
+	".\ExitUpdateMode.h"\
+	".\Logger.h"\
+	".\StdAfx.h"\
+	{$(INCLUDE)}"CeBus.h"\
+	{$(INCLUDE)}"ceddk.h"\
+	{$(INCLUDE)}"ddkmacro.h"\
+	{$(INCLUDE)}"ntstatus.h"\
+	{$(INCLUDE)}"pm.h"\
+	
+
+!ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE x86) Release"
+
+DEP_CPP_EXITU=\
+	".\Display.h"\
+	".\ExitUpdateMode.h"\
+	".\Logger.h"\
+	".\StdAfx.h"\
+	{$(INCLUDE)}"CeBus.h"\
+	{$(INCLUDE)}"ceddk.h"\
+	{$(INCLUDE)}"ddkmacro.h"\
+	{$(INCLUDE)}"ntstatus.h"\
+	{$(INCLUDE)}"pm.h"\
+	
+
+!ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE x86) Debug"
+
+DEP_CPP_EXITU=\
+	".\Display.h"\
+	".\ExitUpdateMode.h"\
+	".\Logger.h"\
+	".\StdAfx.h"\
+	{$(INCLUDE)}"CeBus.h"\
+	{$(INCLUDE)}"ceddk.h"\
+	{$(INCLUDE)}"ddkmacro.h"\
+	{$(INCLUDE)}"ntstatus.h"\
+	{$(INCLUDE)}"pm.h"\
+	
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\ReadNAND.cpp
 
 !IF  "$(CFG)" == "LeafSDTools - Win32 (WCE SH4) Release"
@@ -255,13 +350,15 @@ DEP_CPP_READN=\
 	".\ReadNAND.h"\
 	".\StdAfx.h"\
 	".\Touch.h"\
-	{$(INCLUDE)}"CeBus.h"\
-	{$(INCLUDE)}"ceddk.h"\
-	{$(INCLUDE)}"ddkmacro.h"\
-	{$(INCLUDE)}"ntstatus.h"\
-	{$(INCLUDE)}"pkfuncs.h"\
-	{$(INCLUDE)}"pm.h"\
-	{$(INCLUDE)}"toolhelp.h"\
+	{$(INCLUDE)}"kfuncs.h"\
+	
+NODEP_CPP_READN=\
+	".\dkmacro.h"\
+	".\eBus.h"\
+	".\eddk.h"\
+	".\m.h"\
+	".\oolhelp.h"\
+	".\tstatus.h"\
 	
 
 !ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE SH4) Debug"
@@ -367,13 +464,15 @@ DEP_CPP_SDPIN=\
 	".\SDPinControl.h"\
 	".\StdAfx.h"\
 	".\Touch.h"\
-	{$(INCLUDE)}"CeBus.h"\
-	{$(INCLUDE)}"ceddk.h"\
-	{$(INCLUDE)}"ddkmacro.h"\
-	{$(INCLUDE)}"ntstatus.h"\
-	{$(INCLUDE)}"pkfuncs.h"\
-	{$(INCLUDE)}"pm.h"\
-	{$(INCLUDE)}"toolhelp.h"\
+	{$(INCLUDE)}"kfuncs.h"\
+	
+NODEP_CPP_SDPIN=\
+	".\dkmacro.h"\
+	".\eBus.h"\
+	".\eddk.h"\
+	".\m.h"\
+	".\oolhelp.h"\
+	".\tstatus.h"\
 	
 
 !ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE SH4) Debug"
@@ -479,13 +578,15 @@ DEP_CPP_USERS=\
 	".\StdAfx.h"\
 	".\Touch.h"\
 	".\UserSRAM.h"\
-	{$(INCLUDE)}"CeBus.h"\
-	{$(INCLUDE)}"ceddk.h"\
-	{$(INCLUDE)}"ddkmacro.h"\
-	{$(INCLUDE)}"ntstatus.h"\
-	{$(INCLUDE)}"pkfuncs.h"\
-	{$(INCLUDE)}"pm.h"\
-	{$(INCLUDE)}"toolhelp.h"\
+	{$(INCLUDE)}"kfuncs.h"\
+	
+NODEP_CPP_USERS=\
+	".\dkmacro.h"\
+	".\eBus.h"\
+	".\eddk.h"\
+	".\m.h"\
+	".\oolhelp.h"\
+	".\tstatus.h"\
 	
 
 !ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE SH4) Debug"
@@ -497,12 +598,12 @@ DEP_CPP_USERS=\
 	".\StdAfx.h"\
 	".\Touch.h"\
 	".\UserSRAM.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_USERS=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -596,13 +697,15 @@ DEP_CPP_WRITE=\
 	".\StdAfx.h"\
 	".\Touch.h"\
 	".\WriteNAND.h"\
-	{$(INCLUDE)}"CeBus.h"\
-	{$(INCLUDE)}"ceddk.h"\
-	{$(INCLUDE)}"ddkmacro.h"\
-	{$(INCLUDE)}"ntstatus.h"\
-	{$(INCLUDE)}"pkfuncs.h"\
-	{$(INCLUDE)}"pm.h"\
-	{$(INCLUDE)}"toolhelp.h"\
+	{$(INCLUDE)}"kfuncs.h"\
+	
+NODEP_CPP_WRITE=\
+	".\dkmacro.h"\
+	".\eBus.h"\
+	".\eddk.h"\
+	".\m.h"\
+	".\oolhelp.h"\
+	".\tstatus.h"\
 	
 
 !ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE SH4) Debug"
@@ -712,13 +815,15 @@ DEP_CPP_DISPL=\
 	".\Font.h"\
 	".\Logger.h"\
 	".\StdAfx.h"\
-	{$(INCLUDE)}"CeBus.h"\
-	{$(INCLUDE)}"ceddk.h"\
-	{$(INCLUDE)}"ddkmacro.h"\
-	{$(INCLUDE)}"ntstatus.h"\
-	{$(INCLUDE)}"pkfuncs.h"\
-	{$(INCLUDE)}"pm.h"\
-	{$(INCLUDE)}"toolhelp.h"\
+	{$(INCLUDE)}"kfuncs.h"\
+	
+NODEP_CPP_DISPL=\
+	".\dkmacro.h"\
+	".\eBus.h"\
+	".\eddk.h"\
+	".\m.h"\
+	".\oolhelp.h"\
+	".\tstatus.h"\
 	
 
 !ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE SH4) Debug"
@@ -765,13 +870,15 @@ DEP_CPP_FLASH=\
 	".\Flash.h"\
 	".\Logger.h"\
 	".\StdAfx.h"\
-	{$(INCLUDE)}"CeBus.h"\
-	{$(INCLUDE)}"ceddk.h"\
-	{$(INCLUDE)}"ddkmacro.h"\
-	{$(INCLUDE)}"ntstatus.h"\
-	{$(INCLUDE)}"pkfuncs.h"\
-	{$(INCLUDE)}"pm.h"\
-	{$(INCLUDE)}"toolhelp.h"\
+	{$(INCLUDE)}"kfuncs.h"\
+	
+NODEP_CPP_FLASH=\
+	".\dkmacro.h"\
+	".\eBus.h"\
+	".\eddk.h"\
+	".\m.h"\
+	".\oolhelp.h"\
+	".\tstatus.h"\
 	
 
 !ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE SH4) Debug"
@@ -876,13 +983,15 @@ DEP_CPP_LEAFS=\
 	".\Touch.h"\
 	".\UserSRAM.h"\
 	".\WriteNAND.h"\
-	{$(INCLUDE)}"CeBus.h"\
-	{$(INCLUDE)}"ceddk.h"\
-	{$(INCLUDE)}"ddkmacro.h"\
-	{$(INCLUDE)}"ntstatus.h"\
-	{$(INCLUDE)}"pkfuncs.h"\
-	{$(INCLUDE)}"pm.h"\
-	{$(INCLUDE)}"toolhelp.h"\
+	{$(INCLUDE)}"kfuncs.h"\
+	
+NODEP_CPP_LEAFS=\
+	".\dkmacro.h"\
+	".\eBus.h"\
+	".\eddk.h"\
+	".\m.h"\
+	".\oolhelp.h"\
+	".\tstatus.h"\
 	
 
 !ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE SH4) Debug"
@@ -947,13 +1056,15 @@ DEP_CPP_LOGGE=\
 	".\Display.h"\
 	".\Logger.h"\
 	".\StdAfx.h"\
-	{$(INCLUDE)}"CeBus.h"\
-	{$(INCLUDE)}"ceddk.h"\
-	{$(INCLUDE)}"ddkmacro.h"\
-	{$(INCLUDE)}"ntstatus.h"\
-	{$(INCLUDE)}"pkfuncs.h"\
-	{$(INCLUDE)}"pm.h"\
-	{$(INCLUDE)}"toolhelp.h"\
+	{$(INCLUDE)}"kfuncs.h"\
+	
+NODEP_CPP_LOGGE=\
+	".\dkmacro.h"\
+	".\eBus.h"\
+	".\eddk.h"\
+	".\m.h"\
+	".\oolhelp.h"\
+	".\tstatus.h"\
 	
 
 !ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE SH4) Debug"
@@ -1046,13 +1157,15 @@ DEP_CPP_STDAF=\
 	".\Display.h"\
 	".\Logger.h"\
 	".\StdAfx.h"\
-	{$(INCLUDE)}"CeBus.h"\
-	{$(INCLUDE)}"ceddk.h"\
-	{$(INCLUDE)}"ddkmacro.h"\
-	{$(INCLUDE)}"ntstatus.h"\
-	{$(INCLUDE)}"pkfuncs.h"\
-	{$(INCLUDE)}"pm.h"\
-	{$(INCLUDE)}"toolhelp.h"\
+	{$(INCLUDE)}"kfuncs.h"\
+	
+NODEP_CPP_STDAF=\
+	".\dkmacro.h"\
+	".\eBus.h"\
+	".\eddk.h"\
+	".\m.h"\
+	".\oolhelp.h"\
+	".\tstatus.h"\
 	
 # ADD CPP /Yc"stdafx.h"
 
@@ -1105,13 +1218,15 @@ DEP_CPP_TOUCH=\
 	".\Logger.h"\
 	".\StdAfx.h"\
 	".\Touch.h"\
-	{$(INCLUDE)}"CeBus.h"\
-	{$(INCLUDE)}"ceddk.h"\
-	{$(INCLUDE)}"ddkmacro.h"\
-	{$(INCLUDE)}"ntstatus.h"\
-	{$(INCLUDE)}"pkfuncs.h"\
-	{$(INCLUDE)}"pm.h"\
-	{$(INCLUDE)}"toolhelp.h"\
+	{$(INCLUDE)}"kfuncs.h"\
+	
+NODEP_CPP_TOUCH=\
+	".\dkmacro.h"\
+	".\eBus.h"\
+	".\eddk.h"\
+	".\m.h"\
+	".\oolhelp.h"\
+	".\tstatus.h"\
 	
 
 !ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE SH4) Debug"
@@ -1206,6 +1321,10 @@ NODEP_CPP_TOUCH=\
 # Begin Source File
 
 SOURCE=.\Display.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ExitUpdateMode.h
 # End Source File
 # Begin Source File
 

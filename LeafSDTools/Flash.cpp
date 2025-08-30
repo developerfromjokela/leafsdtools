@@ -173,8 +173,10 @@ int ReadSingleFlashBlock(int block, DWORD size, BYTE* output) {
 				CloseHandle(hFMD1);
 				return 0;
 			}
+			CloseHandle(hFMD1);
 			return 3;
 		}
+		CloseHandle(hFMD1);
 		return 2;
 	}
 	return 1;
