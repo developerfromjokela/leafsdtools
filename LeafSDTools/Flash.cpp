@@ -158,6 +158,76 @@ void SDController_CMD17() {
 
 */
 
+// Helper function to log ioControlInput contents
+void LogIoControlInput(LPCWSTR context, DWORD* ioControlInput) {
+    WCHAR logBuffer[256];
+    wsprintfW(logBuffer, L"%s: [0x%08X, 0x%08X, 0x%08X, 0x%08X]", 
+              context, ioControlInput[0], ioControlInput[1], ioControlInput[2], ioControlInput[3]);
+    LogError(logBuffer, 0); // Use 0 as the second parameter since LogError expects a DWORD
+}
+
+bool WriteSingleBlockFromFile(HANDLE flashDevice, FILE* file, BYTE* buffer, DWORD* ioControlInput, DWORD block) {
+	ZeroMemory(ioControlInput, 0x10);
+
+	// Read block from file
+	size_t readBytes = fread(buffer, 1, 0x10000, file);
+	if (readBytes == 0) {
+		LogError(L"Read zero bytes!", readBytes);
+		return false;
+	}
+
+	if (LOG_FLASH_WRITING)
+		LogError(L"Read bytes from backup", readBytes);
+
+	if (readBytes != 0x10000) {
+		LogError(L"WRITE BLOCK ERROR", block);
+		LogError(L"Block size was not expected", readBytes);
+		return false;
+	}
+
+
+	// Erase block
+	ioControlInput[0] = block;
+	ioControlInput[1] = 1;
+
+	if (LOG_FLASH_WRITING)
+		LogIoControlInput(L"ioControlInput for erase", ioControlInput);
+
+	if (!DeviceIoControl(flashDevice, 0x8011200C, ioControlInput, 8,
+						 0, 0, NULL, NULL)) {
+		LogError(L"Cannot erase flash!", GetLastError());
+		return false;
+	}
+
+	// Write block
+	ZeroMemory(ioControlInput, 0x10);
+
+	DWORD resultDwords[2] = {0, 0};
+	ioControlInput[0] = block;
+	ioControlInput[1] = 0x10000;
+	ioControlInput[2] = (DWORD)buffer;
+	ioControlInput[3] = (DWORD)resultDwords;
+
+	if (LOG_FLASH_WRITING)
+		LogIoControlInput(L"ioControlInput for write", ioControlInput);
+
+	if (!DeviceIoControl(flashDevice, 0x80112004, ioControlInput, 0x10,
+						 0, 0, NULL, NULL)) {
+		LogError(L"Cannot write flash!", GetLastError());
+		return false;
+	}
+
+
+	if (LOG_FLASH_WRITING) {
+		LogError(L"FLASH WRITE RESULT1: ", resultDwords[0]);
+		LogError(L"FLASH WRITE RESULT2: ", resultDwords[1]);
+	}
+
+	if (resultDwords[0] != 0x10000) return false;
+
+	return true;
+}
+
 int ReadSingleFlashBlock(int block, DWORD size, BYTE* output) {
 	LogError(L"ReadSingleFlashBLK: Opening flash block", block);
 	LogError(L"ReadSingleFlashBLK: Reading size:", size);

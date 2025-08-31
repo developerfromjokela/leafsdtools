@@ -4,8 +4,14 @@
 #define SD1_DISK L"DSK1:"
 #define SD2_DISK L"DSK8:"
 
+#define LOG_FLASH_WRITING false
+
+#define FLASH_CONTROL_IO_SIZE 0x10
+
+// Flash
 int GetProdSection(CHAR* modelName, BYTE* productId, BYTE* serial, BYTE* pin);
 int ReadSingleFlashBlock(int block, DWORD size, BYTE* output);
+bool WriteSingleBlockFromFile(HANDLE flashDevice, FILE* file, BYTE* buffer, DWORD* ioControlInput, DWORD block);
 
 // SD
 int ReadFullSDPin(BYTE* pin);

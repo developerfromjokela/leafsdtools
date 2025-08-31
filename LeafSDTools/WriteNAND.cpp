@@ -237,7 +237,7 @@ void RunWriteNAND() {
 					// Seek to offset 0x10000
 					fseek(backupFile, 0x10000, SEEK_SET);
 
-					/*HANDLE hDevice = CreateFileW(L"FMD1:",
+					HANDLE hDevice = CreateFileW(L"FMD1:",
                                  GENERIC_READ | GENERIC_WRITE,
                                  0,
                                  NULL,
@@ -251,7 +251,7 @@ void RunWriteNAND() {
 						PrintToScreen(1, "Could not open flash device!");
 						Sleep(5000);
 						return;
-					}*/
+					}
 
 					BYTE* buffer = NULL;
 
@@ -268,72 +268,49 @@ void RunWriteNAND() {
 
 					ZeroMemory(buffer, 0x10000);
 
+					DWORD* ioControlInput = (DWORD*)malloc(FLASH_CONTROL_IO_SIZE);
+					if (ioControlInput == NULL)
+					{
+						PrintToScreen(1, "Failed to allocate ioControlInput!");
+						free(buffer);
+						fclose(backupFile);
+						Sleep(5000);
+						return;
+					}
+					ZeroMemory(ioControlInput, FLASH_CONTROL_IO_SIZE);
+
 					int blockIndex = 8;
 					int blockCounter = 0;
-					BYTE dummyOut[2] = {0};
 					BOOL success = TRUE;
 
 					while (blockIndex < 0x87)  // Loop from page 8 to 134 (0x86)
 					{
-						size_t readBytes = fread(buffer, 1, 0x10000, backupFile);
-						if (readBytes == 0)
-							break;
-
-						LogError(L"Read bytes from backup", readBytes);
-
-						if (readBytes < 0x10000) {
-							LogError(L"BLOCK ERROR", blockIndex);
-							LogError(L"Block size was not expected", readBytes);
-							break;
-						}
-
-						PrintToScreen(1, "\r >> %u / %u blocks", blockIndex-7, 0x7F);
-
-						DWORD blockSum = DataSum(buffer, 0x10000);
+						
+						/*DWORD blockSum = DataSum(buffer, 0x10000);
 
 						LogError(L"BLOCK READ", blockIndex);
-						LogError(L"BLOCK SUM", blockSum);
-
-						/*// First DeviceIoControl: clear flash area
-						struct {
-							DWORD page;
-							DWORD cmd;
-						} flashSelect = { blockIndex, 1 };
-
-						PrintToScreen(1, "\r >> %u / %u blocks", blockIndex-7, 0x7F);
-
-						if (!DeviceIoControl(hDevice, 0x8011200C, &flashSelect, sizeof(flashSelect),
-											 0, 0, NULL, NULL)) {
+						LogError(L"BLOCK SUM", blockSum);*/
+						
+						if (!WriteSingleBlockFromFile(hDevice, backupFile, buffer, ioControlInput, blockIndex)) {
+							PrintToScreen(1, "\nFailed to write block %u! skip..", blockIndex);
 							success = FALSE;
 							break;
 						}
 
-						// Second DeviceIoControl: write to flash area
-						struct {
-							DWORD page;
-							DWORD size;
-							void *data;
-							void *unused;
-						} flashWrite = { blockIndex, 0x10000, buffer, dummyOut };
-
-						if (!DeviceIoControl(hDevice, 0x80112004, &flashWrite, sizeof(flashWrite),
-											 0, 0, NULL, NULL)) {
-							success = FALSE;
-							break;
-						}*/
+						PrintToScreen(1, "\r >> %u / %u blocks", blockIndex-7, 0x7F);
 
 						blockIndex++;
 						blockCounter++;
 					}
 
-					//CloseHandle(hDevice);
+					CloseHandle(hDevice);
 					fclose(backupFile);
 					free(buffer);
 
 					if (!success) {
-						PrintToScreen(1, "\nFailed to flash (simulation)!\n");
+						PrintToScreen(1, "\nFailed to flash all blocks!\n");
 					} else {
-						PrintToScreen(1, "\nFlash complete (simulation)!\n");
+						PrintToScreen(1, "\nFlash complete!\n");
 					}
 				}
 

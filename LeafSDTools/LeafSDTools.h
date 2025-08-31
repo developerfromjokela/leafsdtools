@@ -3,6 +3,6 @@
 
 #include <windows.h>
 
-#define TOOL_VERSION "104-beta"
+#define TOOL_VERSION "105-beta"
 
 #endif // LEAFSDTOOLS_H
