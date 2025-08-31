@@ -31,4 +31,6 @@ Have your SD card flashed with latest disk image available in releases.
 
 To exit from Software Update mode, insert stock SD card back and press YES when cancellation option comes available.  
 
+> With version 104, you can also exit Software Update mode by pressing EXIT UPDATE button in main menu
+
 **NOTE! Make sure your stock SD is locked before exiting update mode! Head Unit won't boot back if SD is unlocked.**
