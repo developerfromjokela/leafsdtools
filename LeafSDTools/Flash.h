@@ -11,7 +11,7 @@
 // Flash
 int GetProdSection(CHAR* modelName, BYTE* productId, BYTE* serial, BYTE* pin);
 int ReadSingleFlashBlock(int block, DWORD size, BYTE* output);
-bool WriteSingleBlockFromFile(HANDLE flashDevice, FILE* file, BYTE* buffer, DWORD* ioControlInput, DWORD block);
+bool WriteSingleBlockFromFile(HANDLE flashDevice, FILE* file, BYTE* buffer, DWORD* ioControlInput, DWORD block, DWORD blockSize);
 
 // SD
 int ReadFullSDPin(BYTE* pin);

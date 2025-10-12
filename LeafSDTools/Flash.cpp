@@ -166,11 +166,12 @@ void LogIoControlInput(LPCWSTR context, DWORD* ioControlInput) {
     LogError(logBuffer, 0); // Use 0 as the second parameter since LogError expects a DWORD
 }
 
-bool WriteSingleBlockFromFile(HANDLE flashDevice, FILE* file, BYTE* buffer, DWORD* ioControlInput, DWORD block) {
+// Block sizes: 0-7: 8192 bytes, after 8: 65536 bytes
+bool WriteSingleBlockFromFile(HANDLE flashDevice, FILE* file, BYTE* buffer, DWORD* ioControlInput, DWORD block, DWORD blockSize) {
 	ZeroMemory(ioControlInput, 0x10);
 
 	// Read block from file
-	size_t readBytes = fread(buffer, 1, 0x10000, file);
+	size_t readBytes = fread(buffer, 1, blockSize, file);
 	if (readBytes == 0) {
 		LogError(L"Read zero bytes!", readBytes);
 		return false;
@@ -179,7 +180,7 @@ bool WriteSingleBlockFromFile(HANDLE flashDevice, FILE* file, BYTE* buffer, DWOR
 	if (LOG_FLASH_WRITING)
 		LogError(L"Read bytes from backup", readBytes);
 
-	if (readBytes != 0x10000) {
+	if (readBytes != blockSize) {
 		LogError(L"WRITE BLOCK ERROR", block);
 		LogError(L"Block size was not expected", readBytes);
 		return false;
@@ -204,7 +205,7 @@ bool WriteSingleBlockFromFile(HANDLE flashDevice, FILE* file, BYTE* buffer, DWOR
 
 	DWORD resultDwords[2] = {0, 0};
 	ioControlInput[0] = block;
-	ioControlInput[1] = 0x10000;
+	ioControlInput[1] = blockSize;
 	ioControlInput[2] = (DWORD)buffer;
 	ioControlInput[3] = (DWORD)resultDwords;
 
@@ -223,7 +224,7 @@ bool WriteSingleBlockFromFile(HANDLE flashDevice, FILE* file, BYTE* buffer, DWOR
 		LogError(L"FLASH WRITE RESULT2: ", resultDwords[1]);
 	}
 
-	if (resultDwords[0] != 0x10000) return false;
+	if (resultDwords[0] != blockSize) return false;
 
 	return true;
 }

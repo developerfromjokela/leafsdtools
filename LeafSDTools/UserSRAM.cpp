@@ -177,7 +177,7 @@ bool RestoreBlocksFromFile(HANDLE flashDevice, char* fileName, DWORD start, DWOR
 		DWORD counter = start;
 		do
 		{
-			if (!WriteSingleBlockFromFile(flashDevice, backupFile, buffer, ioControlInput, counter)) {
+			if (!WriteSingleBlockFromFile(flashDevice, backupFile, buffer, ioControlInput, counter, 0x10000)) {
 				PrintToScreen(1, "\nFailed to write block! skip..");
 				break;
 			}
