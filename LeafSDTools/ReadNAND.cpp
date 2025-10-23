@@ -21,7 +21,7 @@ void RunReadNAND(BOOL unattend) {
 		BYTE serial[4] = {0};
 		BYTE productId[4] = {0};
 		LogError(L"GetProdSection!", 0);
-		int prodResult = GetProdSection(NULL, (BYTE*)productId, (BYTE*)serial, NULL);
+		int prodResult = GetProdSection(NULL, (BYTE*)productId, NULL, (BYTE*)serial, NULL);
 		if (prodResult != 0) {
 			LogError(L"GetProdSection fail!", prodResult);
 		    PrintToScreen(1, "Could not read device section: %u \n", prodResult);
@@ -42,6 +42,9 @@ void RunReadNAND(BOOL unattend) {
 			BYTE* buffer = NULL;
 			DWORD* ioControlInput = NULL;
 			HANDLE hDevice = INVALID_HANDLE_VALUE;
+
+			if (NEW_NAV)
+				bufferSize = 0x20000;
 
 			// Allocate buffers dynamically
 			buffer = (BYTE*)malloc(bufferSize);
@@ -92,17 +95,25 @@ void RunReadNAND(BOOL unattend) {
 				return;
 			}
 
-			PrintToScreen(1, ">> 0000000 / %u", (0x86-7) * bufferSize);
+			DWORD maxSize = (NEW_NAV ? ((MAX_BLOCKS+1)*bufferSize) : ((MAX_BLOCKS-6) * bufferSize));
+
+			PrintToScreen(1, ">> 0000000 / %u", maxSize);
 
 			DWORD counter = 0;
 			DWORD byteCounter = 0;
+			DWORD blockSize = bufferSize;
 			do
 			{
+
+				if (!NEW_NAV) {
+					blockSize = (counter < 8 ? 8192 : bufferSize);
+				}
+
 				ioControlInput[0] = counter;
 				ioControlInput[1] = 0;
 				// Call DeviceIoControl with dynamically allocated input buffer
-				devIOResult = DeviceIoControl(hDevice, 0x80112000, ioControlInput, ioControlInputSize,
-											  buffer, (counter < 8 ? 8192 : bufferSize), &bytesReturned, NULL);
+				devIOResult = DeviceIoControl(hDevice, (NEW_NAV ? 0x1112000 : 0x80112000), ioControlInput, ioControlInputSize,
+											  buffer, blockSize, &bytesReturned, NULL);
 				if (!devIOResult)
 				{
 					PrintToScreen(1, "DeviceIoControl failed!");
@@ -110,19 +121,19 @@ void RunReadNAND(BOOL unattend) {
 				}
 
 				// Write data to the file
-				size_t bytesWritten = fwrite(buffer, 1, (counter < 8 ? 8192 : bufferSize), file);
-				if (bytesWritten != (counter < 8 ? 8192 : bufferSize))
+				size_t bytesWritten = fwrite(buffer, 1, blockSize, file);
+				if (bytesWritten != blockSize)
 				{
 					PrintToScreen(1, "File write failed!");
 					break;
 				}
 
-				byteCounter += (counter < 8 ? 8192 : bufferSize);
+				byteCounter += blockSize;
 
-				PrintToScreen(1, "\r >> %u / %u", counter * bufferSize, (0x86-6) * bufferSize);
+				PrintToScreen(1, "\r >> %u / %u", byteCounter, maxSize);
 
 				counter++;
-			} while (counter <= 0x86);
+			} while (counter <= MAX_BLOCKS);
 
 			fclose(file);
 			CloseHandle(hDevice);

@@ -6,9 +6,11 @@
 #include "Touch.h"
 
 
-const char* flashLabels[] = {"ALL+EEPROM", "ALL OS", "BL IPL", "PROD", "BL BASE", "BL EBOOT", "BL ENH", "APP", "START", "CANCEL"};
+const char* flashLabels[] = {"ALL+EEPROM", "ALL OS", "START", "CANCEL"};
 
-bool flashBlocks[10] = {false, false, false, false, false, false, false, false, false, false};
+bool flashBlocks[3] = {false, false, false};
+
+static DWORD bufferSize = 0x20000;
 
 
 void RenderFlashMenuOptions() {
@@ -90,7 +92,7 @@ void RunWriteNAND() {
 			}
 		} else {
 			PrintToScreen(1, "Valid NAND backup found! Size: %u bytes\n", fileSize);
-			flashBlocks[9] = true;
+			flashBlocks[2] = true;
 
 			bool startFlash = false;
 			bool quitAction = false;
@@ -113,13 +115,13 @@ void RunWriteNAND() {
 				}
 
 				switch (btn) {
-					case 8:
+					case 2:
 						if (flashBlocks[btn]) {
 							quitAction = false;
 							startFlash = true;
 						}
 						break;
-					case 9:
+					case 3:
 						startFlash = false;
 						quitAction = true;
 						break;
@@ -148,79 +150,23 @@ void RunWriteNAND() {
 								break;
 							}
 						}
-						flashBlocks[8] = flashEnabled;
+						flashBlocks[2] = flashEnabled;
 						break;
 				}
 			}
 
 			if (startFlash) {
 
-				flashBlocks[9] = false;
-				flashBlocks[10] = false;
+				flashBlocks[2] = false;
+				flashBlocks[3] = false;
 
 				RenderFlashMenuOptions();
 				Sleep(400);
 
 				if (!flashBlocks[0] && !flashBlocks[1]) {
-					char* flashStringFormat = "\r >> %s %u / %u block";
-					// Only flash specific blocks
-					if (flashBlocks[2]) {
-						PrintToScreen(1, "\nBOOT IPL NOT IMPLEMENTED YET!\n");
-						/*PrintToScreen(1, flashStringFormat, "Boot IPL", 0, 4, 0);
-						for (int page = 0; page < 4; page++) {
-							Sleep(350);
-							PrintToScreen(1, flashStringFormat, "Boot IPL", page+1, 4);
-						}*/
-
-						Sleep(500);
-					}
-
-					if (flashBlocks[3]) {
-						PrintToScreen(1, "\nPROD NOT IMPLEMENTED YET!\n");
-						/*PrintToScreen(1, flashStringFormat, "PROD", 0, 4);
-						for (int page = 0; page < 4; page++) {
-							Sleep(350);
-							PrintToScreen(1, flashStringFormat, "PROD", page+1, 4);
-						}*/
-						Sleep(500);
-					}
-
-					if (flashBlocks[4]) {
-						PrintToScreen(1, "\nBASE NOT IMPLEMENTED YET!\n");
-						/*PrintToScreen(1, flashStringFormat, "Boot BASE", 0, 1);
-						Sleep(350);
-						PrintToScreen(1, flashStringFormat, "Boot BASE", 1, 1);*/
-						Sleep(500);
-					}
-					if (flashBlocks[5]) {
-						PrintToScreen(1, "\nEBOOT NOT IMPLEMENTED YET!\n");
-						/*PrintToScreen(1, flashStringFormat, "Boot EBOOT", 0, 1);
-						Sleep(350);
-						PrintToScreen(1, flashStringFormat, "Boot EBOOT", 1, 1);*/
-						Sleep(500);
-					}
-					if (flashBlocks[6]) {
-						PrintToScreen(1, "\nBOOT ENH NOT IMPLEMENTED YET!\n");
-						/*PrintToScreen(1, flashStringFormat, "Boot ENHANCE", 0, 1);
-						Sleep(350);
-						PrintToScreen(1, flashStringFormat, "Boot ENHANCE", 1, 1);*/
-						Sleep(500);
-					}
-					if (flashBlocks[7]) {
-						PrintToScreen(1, "\nAPP NOT IMPLEMENTED YET!\n");
-						/*PrintToScreen(1, flashStringFormat, "APP X/W1", 0, 54);
-						for (int page = 0; page < 54; page++) {
-							Sleep(350);
-							PrintToScreen(1, flashStringFormat, "APP X/W1", page+1, 54);
-						}
-						PrintToScreen(1, "\n");
-						PrintToScreen(1, flashStringFormat, "PS + MEM", 0, 1);
-						Sleep(350);
-						PrintToScreen(1, flashStringFormat, "PS + MEM", 1, 1);*/
-						Sleep(500);
-					}
+					// TODO: implement specific blocks 
 				} else if (flashBlocks[1]) {
-					// Only flash 64kB blocks
+					// Only flash starting from block 3
 					PrintToScreen(1, "\nFlashing all OS data\n");
 
 					FILE *backupFile = fopen(fileName, "rb");
@@ -230,8 +176,8 @@ void RunWriteNAND() {
 						return;
 					}
 
-					// Seek to offset 0x10000
-					fseek(backupFile, 0x10000, SEEK_SET);
+					// Seek to offset 0x20000*3 = 0x60000 (block 3)
+					fseek(backupFile, bufferSize*3, SEEK_SET);
 
 					HANDLE hDevice = CreateFileW(L"FMD1:",
                                  GENERIC_READ | GENERIC_WRITE,
@@ -252,7 +198,7 @@ void RunWriteNAND() {
 					BYTE* buffer = NULL;
 
 					// Allocate buffers dynamically
-					buffer = (BYTE*)malloc(0x10000);
+					buffer = (BYTE*)malloc(bufferSize);
 					if (buffer == NULL)
 					{
 						fclose(backupFile);
@@ -262,7 +208,7 @@ void RunWriteNAND() {
 					}
 
 
-					ZeroMemory(buffer, 0x10000);
+					ZeroMemory(buffer, 0x20000);
 
 					DWORD* ioControlInput = (DWORD*)malloc(FLASH_CONTROL_IO_SIZE);
 					if (ioControlInput == NULL)
@@ -275,29 +221,29 @@ void RunWriteNAND() {
 					}
 					ZeroMemory(ioControlInput, FLASH_CONTROL_IO_SIZE);
 
-					int blockIndex = 8;
-					int blockCounter = 0;
+					int blockIndex = 3;
+					DWORD byteCounter = 0;
 					BOOL success = TRUE;
 
-					while (blockIndex < 0x87)  // Loop from page 8 to 134 (0x86)
+					DWORD maxSize = (0x1fd-3)*bufferSize;
+
+					PrintToScreen(1, ">> 0000000 / %u", maxSize);
+
+					while (blockIndex < 0x1fd)  // Loop from page 0x3 to 0x1ff
 					{
 						
-						/*DWORD blockSum = DataSum(buffer, 0x10000);
-
-						LogError(L"BLOCK READ", blockIndex);
-						LogError(L"BLOCK SUM", blockSum);*/
-						
-						if (!WriteSingleBlockFromFile(hDevice, backupFile, buffer, ioControlInput, blockIndex, 0x10000)) {
+						if (!WriteSingleBlockFromFile(hDevice, backupFile, buffer, ioControlInput, blockIndex, bufferSize)) {
 							PrintToScreen(1, "\nFailed to write block %u! skip..", blockIndex);
 							success = FALSE;
 							blockIndex++;
 							break;
 						}
 
-						PrintToScreen(1, "\r >> %u / %u blocks", blockIndex-7, 0x7F);
+						byteCounter += bufferSize;
+
+						PrintToScreen(1, "\r >> %u / %u", byteCounter, maxSize);
 
 						blockIndex++;
-						blockCounter++;
 					}
 
 					CloseHandle(hDevice);
@@ -338,7 +284,7 @@ void RunWriteNAND() {
 						return;
 					}
 
-					BYTE* buffer = (BYTE*)malloc(0x10000);
+					BYTE* buffer = (BYTE*)malloc(bufferSize);
 
 					if (buffer == NULL)
 					{
@@ -349,7 +295,7 @@ void RunWriteNAND() {
 					}
 
 
-					ZeroMemory(buffer, 0x10000);
+					ZeroMemory(buffer, bufferSize);
 
 					DWORD* ioControlInput = (DWORD*)malloc(FLASH_CONTROL_IO_SIZE);
 					if (ioControlInput == NULL)
@@ -363,23 +309,29 @@ void RunWriteNAND() {
 					ZeroMemory(ioControlInput, FLASH_CONTROL_IO_SIZE);
 
 					int blockIndex = 0;
-					int blockCounter = 0;
+					DWORD byteCounter = 0;
 					BOOL success = TRUE;
 
-					while (blockIndex < 0x87)  // Loop from page 0 to 134 (0x86)
+					DWORD maxSize = (0x1fd)*bufferSize;
+
+					PrintToScreen(1, ">> 0000000 / %u", maxSize);
+
+
+					while (blockIndex < 0x1fd)  // Loop from page 0 to 0x1ff
 					{
 						
-						if (!WriteSingleBlockFromFile(hDevice, backupFile, buffer, ioControlInput, blockIndex, (blockIndex < 8 ? 8192 : 0x10000))) {
+						if (!WriteSingleBlockFromFile(hDevice, backupFile, buffer, ioControlInput, blockIndex, bufferSize)) {
 							PrintToScreen(1, "\nFailed to write block %u! skip..", blockIndex);
 							success = FALSE;
-							blockCounter++;
+							blockIndex++;
 							break;
 						}
 
-						PrintToScreen(1, "\r >> %u / %u blocks", blockIndex, 0x87);
+						byteCounter += bufferSize;
+
+						PrintToScreen(1, "\r >> %u / %u", byteCounter, maxSize);
 
 						blockIndex++;
-						blockCounter++;
 					}
 
 					CloseHandle(hDevice);

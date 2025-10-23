@@ -6,5 +6,6 @@ void LogError(LPCWSTR message, HRESULT hr);
 void LogBufferContents(LPCWSTR prefix, DWORD* buffer, int size);
 void CleanupLog();
 bool IsLoggingEnabled();
+void SerialLog(char* message);
 
 #endif

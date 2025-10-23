@@ -9,7 +9,7 @@
 #define FLASH_CONTROL_IO_SIZE 0x10
 
 // Flash
-int GetProdSection(CHAR* modelName, BYTE* productId, BYTE* serial, BYTE* pin);
+int GetProdSection(CHAR* modelName, BYTE* productId, BYTE* productId2, BYTE* serial, BYTE* pin);
 int ReadSingleFlashBlock(int block, DWORD size, BYTE* output);
 bool WriteSingleBlockFromFile(HANDLE flashDevice, FILE* file, BYTE* buffer, DWORD* ioControlInput, DWORD block, DWORD blockSize);
 

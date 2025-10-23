@@ -58,18 +58,72 @@ void ClearMenuOptionArea() {
 	ClearArea(620, 75, 180, 480);
 }
 
+typedef int (WINAPI *LPCAPISetBootMode)(int param_1);
+
+void SetBootMode() {
+   HINSTANCE hDll = NULL;
+   LPCAPISetBootMode pSetBootMode = NULL;
+   SerialLog("Setting bootmode... \r\n");
+   // Load the DLL
+   hDll = LoadLibrary(TEXT("COMMONDLL.DLL"));
+   if (hDll == NULL)
+   {
+		LogError(L"Failed to load COMMONDLL.DLL.", GetLastError());
+		return;
+   }
+
+   // Get the function address
+   pSetBootMode = (LPCAPISetBootMode)GetProcAddress(hDll, TEXT("CApi_SetBootMode"));
+   if (pSetBootMode == NULL)
+   {
+		LogError(L"Failed to get address of CApi_SetBootMode.", GetLastError());
+		FreeLibrary(hDll);
+		return;
+   }
+
+   pSetBootMode(0);
+
+   FreeLibrary(hDll);
+   SerialLog("Bootmode set to 0!\r\n");
+}
+
+
+
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow) {
-	 if (InitGraphic() != 0) {
-       LogError(L"Display failed", 1);
+	if (NEW_NAV) {
+		//SetBootMode();
+		// For QY8XXX turn on LCD
+		//SerialLog("Turn on LCD..\r\n");
+		HANDLE lcd = CreateFileW(L"LCD1:",0xc0000000,0,0x0,3,0,0x0);
+		if (lcd == INVALID_HANDLE_VALUE) {
+			SerialLog("Cannot open LCD!\r\n");
+		}
+		else {
+		   BYTE lcdCtrl[1] = {0};
+		   DeviceIoControl(lcd,0x800c20e0,lcdCtrl,1,0x0,0,0x0,0x0);
+		   CloseHandle(lcd);
+		}
+	}
+	//SerialLog("InitGraphic\r\n");
+	if (InitGraphic() != 0) {
+       SerialLog("Display init failed!\r\n");
+	   // Avoid trapping in update mode, quit on failure
+	   if (NEW_NAV) 
+		  SetBootMode();
        return 1;
     }
-	InitSDCards();
+	if (!NEW_NAV)
+		InitSDCards();
     __try {
 
 		while (TRUE) {
 			Sleep(50);
-			DrawBackground(0x001F);
+			if (NEW_NAV) {
+			   DrawBackground(0xA810);
+			} else {
+               DrawBackground(0x001F);
+			}
 			AdjustBoundaries(770);
 			Sleep(50);
 			// welcome banner
@@ -79,6 +133,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
 			CHAR model[8] = {0};
 			BYTE serial[4] = {0};
 			BYTE productId[4] = {0};
+			BYTE productId2[4] = {0};
 			BYTE pin[4] = {0};
 
 
@@ -93,10 +148,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
 				LogError(L"Start log", 0);
 			}
 
-			int prodResult = GetProdSection((CHAR*)model, (BYTE*)productId, (BYTE*)serial, (BYTE*)pin);
+			int prodResult = GetProdSection((CHAR*)model, (BYTE*)productId,(BYTE*)productId2, (BYTE*)serial, (BYTE*)pin);
 			if (prodResult == 0) {
 				PrintToScreen(1, "MODEL: %s\n", model);
 				PrintToScreen(1, "Product ID / ID Code: %02X %02X %02X %02X\n", ((BYTE*)productId)[0], ((BYTE*)productId)[1], ((BYTE*)productId)[2], ((BYTE*)productId)[3]);
+				if (NEW_NAV)
+					PrintToScreen(1, "Product ID / ID Code 2: %02X %02X %02X %02X\n", ((BYTE*)productId2)[0], ((BYTE*)productId2)[1], ((BYTE*)productId2)[2], ((BYTE*)productId2)[3]);
 				PrintToScreen(1, "SERIAL: %02X %02X %02X %02X\n", ((BYTE*)serial)[0], ((BYTE*)serial)[1], ((BYTE*)serial)[2], ((BYTE*)serial)[3]);
 				PrintToScreen(1, "SD Card PIN: %02X %02X %02X %02X\n", ((BYTE*)pin)[0], ((BYTE*)pin)[1], ((BYTE*)pin)[2], ((BYTE*)pin)[3]);			
 			} else {
@@ -120,8 +177,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
 				if (touchEvt != NULL) {
 					if (btn == -1) {
 						btn = GetPressedButton(touchEvt->xCoord, touchEvt->yCoord, 780, 20, 180, 65, 10, 6);
+						if (btn != -1 && NEW_NAV)
+							break;
 					}
-				} else if (btn != -1) {
+				} else if (btn != -1 && !NEW_NAV) {
+					LogError(L"Valid btn", btn);
 					// Once user has lifted their finger off / touch events have stopped, continue.
 					break;
 				}
@@ -154,6 +214,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
 		}
 
     } __except (EXCEPTION_EXECUTE_HANDLER) {
+		// Avoid trapping in update mode, quit on failure
+	    if (NEW_NAV) 
+		  SetBootMode();
         WCHAR errorMsg[256];
 	    DrawBackground(0xF000);
 		AdjustTextPosition(0, 0);

@@ -16,7 +16,6 @@ DWORD g_maxX = 0;
 DWORD g_maxY = 0;
 DWORD g_width = 0;
 DWORD g_height = 0;
-DWORD g_fullSize = 0;
 DWORD g_charWidth = 0xB;
 DWORD g_charHeight = 0x16;
 DWORD g_offsetX = 0;
@@ -237,7 +236,6 @@ int InitGraphic() {
     g_maxY = 0;
     g_width = 0;
     g_height = 0;
-    g_fullSize = 0;
     g_charWidth = 0xB;
     g_charHeight = 0x16;
     g_offsetX = 0;
@@ -309,7 +307,6 @@ int InitGraphic() {
     // Set globals
     g_width = surfaces[0].width;
     g_height = surfaces[0].height;
-    g_fullSize = surfaces[0].bufferSize;
     g_maxX = g_width / g_charWidth - 1;
     g_maxY = g_height / g_charHeight - 2;
     g_offsetX = 6;

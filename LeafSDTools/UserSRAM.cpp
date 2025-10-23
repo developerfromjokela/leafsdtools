@@ -48,13 +48,13 @@ void InitUserSRAMMainMenu(bool renderMenuOpts) {
 	Sleep(50);
 }
 
-bool DumpBlockToFile(HANDLE flashDevice, FILE* output, BYTE* buffer, DWORD* ioControlInput, DWORD block) {
+bool DumpBlockToFile(HANDLE flashDevice, FILE* output, BYTE* buffer, DWORD* ioControlInput, DWORD block, DWORD bufferSize) {
 	ioControlInput[0] = block;
 	ioControlInput[1] = 0;
 	DWORD bytesReturned;
 	// Call DeviceIoControl with dynamically allocated input buffer
-	BOOL devIOResult = DeviceIoControl(flashDevice, 0x80112000, ioControlInput, 8,
-								  buffer, 0x10000, &bytesReturned, NULL);
+	BOOL devIOResult = DeviceIoControl(flashDevice, (NEW_NAV ? 0x1112000 : 0x80112000), ioControlInput, 8,
+								  buffer, bufferSize, &bytesReturned, NULL);
 	if (!devIOResult)
 	{
 		PrintToScreen(1, "DeviceIoControl failed!");
@@ -62,8 +62,8 @@ bool DumpBlockToFile(HANDLE flashDevice, FILE* output, BYTE* buffer, DWORD* ioCo
 	}
 
 	// Write data to the file
-	size_t bytesWritten = fwrite(buffer, 1, 0x10000, output);
-	if (bytesWritten != 0x10000)
+	size_t bytesWritten = fwrite(buffer, 1, bufferSize, output);
+	if (bytesWritten != bufferSize)
 	{
 		PrintToScreen(1, "File write failed!");
 		return false;
@@ -77,6 +77,9 @@ bool DumpBlocksToFile(HANDLE flashDevice, char* fileName, DWORD start, DWORD end
 	DWORD ioControlInputSize = 8;
 	BYTE* buffer = NULL;
 	DWORD* ioControlInput = NULL;
+
+	if (NEW_NAV)
+		bufferSize = 0x20000;
 
 	// Allocate buffers dynamically
 	buffer = (BYTE*)malloc(bufferSize);
@@ -114,7 +117,7 @@ bool DumpBlocksToFile(HANDLE flashDevice, char* fileName, DWORD start, DWORD end
 	DWORD byteCounter = 0;
 	do
 	{
-		if (!DumpBlockToFile(flashDevice, file, buffer, ioControlInput, counter)) {
+		if (!DumpBlockToFile(flashDevice, file, buffer, ioControlInput, counter, bufferSize)) {
 			PrintToScreen(1, "\nFailed to read block! quitting..");
 		}
 		byteCounter += bufferSize;
@@ -132,6 +135,10 @@ bool DumpBlocksToFile(HANDLE flashDevice, char* fileName, DWORD start, DWORD end
 bool RestoreBlocksFromFile(HANDLE flashDevice, char* fileName, DWORD start, DWORD end) {
 	FILE* backupFile = fopen(fileName, "rb");
 	DWORD bufferSize = 64 * 1024;
+
+	
+	if (NEW_NAV)
+		bufferSize = 0x20000;
 	
 	bool backupFileValid = false;
 	long fileSize = 0;
@@ -141,8 +148,8 @@ bool RestoreBlocksFromFile(HANDLE flashDevice, char* fileName, DWORD start, DWOR
 		fseek(backupFile, 0, SEEK_END);
 		fileSize = ftell(backupFile);
 		LogError(L"FileSize:", fileSize);
-		LogError(L"Expected FileSize:", (end-start)*0x10000);
-		backupFileValid = (fileSize >= (end-start)*0x10000);
+		LogError(L"Expected FileSize:", (end-start)*bufferSize);
+		backupFileValid = (fileSize >= (end-start)*bufferSize);
 	}
 
 	if (!backupFileValid) {
@@ -177,7 +184,7 @@ bool RestoreBlocksFromFile(HANDLE flashDevice, char* fileName, DWORD start, DWOR
 		DWORD counter = start;
 		do
 		{
-			if (!WriteSingleBlockFromFile(flashDevice, backupFile, buffer, ioControlInput, counter, 0x10000)) {
+			if (!WriteSingleBlockFromFile(flashDevice, backupFile, buffer, ioControlInput, counter, bufferSize)) {
 				PrintToScreen(1, "\nFailed to write block! skip..");
 				break;
 			}
@@ -200,7 +207,7 @@ void DumpUserData(BYTE* serial, BYTE* productId) {
 	LogError(L"Start SRAM read!", 0);
 
 	// Open the flash device (FMD1:)
-	HANDLE hDevice = CreateFileW(L"FMD1:", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+	HANDLE hDevice = CreateFileW(L"FMD1:", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, (NEW_NAV ? 0x80 : 0), NULL);
 	if (hDevice == INVALID_HANDLE_VALUE)
 	{
 		PrintToScreen(1, "Could not open flash device!");
@@ -216,14 +223,14 @@ void DumpUserData(BYTE* serial, BYTE* productId) {
 	PrintToScreen(1, "Reading SRAM to file:\n %s\n", fileName);
 	Sleep(1000);
 
-	if (DumpBlocksToFile(hDevice, fileName, 0x47, 0x57)) {
+	if (DumpBlocksToFile(hDevice, fileName, (NEW_NAV ? 0x1fe : 0x47), (NEW_NAV ? 0x200 : 0x57))) {
 		memset(fileName, 0, 260);
 		sprintf(fileName, "\\SystemSD\\vflash_%02X%02X%02X%02X_%02X%02X%02X%02X.bin", 
 			((BYTE*)productId)[0], ((BYTE*)productId)[1], ((BYTE*)productId)[2], ((BYTE*)productId)[3],
 			((BYTE*)serial)[0], ((BYTE*)serial)[1], ((BYTE*)serial)[2], ((BYTE*)serial)[3]);
 		PrintToScreen(1, "Reading VFlash to file:\n %s\n", fileName);
 		Sleep(1000);
-		DumpBlocksToFile(hDevice, (char*)fileName, 0x57, 0x85);
+		DumpBlocksToFile(hDevice, (char*)fileName, 0x1fd, 0x1fd+1);
 	}
 
 	CloseHandle(hDevice);
@@ -251,7 +258,7 @@ void RestoreVFlash(BYTE* serial, BYTE* productId) {
 	PrintToScreen(1, "Restoring VFlash from file:\n %s\n", fileName);
 	Sleep(1000);
 
-	RestoreBlocksFromFile(hDevice, (char*) fileName, 0x57, 0x85);
+	RestoreBlocksFromFile(hDevice, (char*) fileName, 0x1fd, 0x1fd+1);
 
 	CloseHandle(hDevice);
     Sleep(5000);
@@ -262,7 +269,7 @@ void RestoreSRAM(BYTE* serial, BYTE* productId) {
 	LogError(L"Start SRAM write!", 0);
 
 	// Open the flash device (FMD1:)
-	HANDLE hDevice = CreateFileW(L"FMD1:", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+	HANDLE hDevice = CreateFileW(L"FMD1:", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, (NEW_NAV ? 0x80 : 0), NULL);
 	if (hDevice == INVALID_HANDLE_VALUE)
 	{
 		PrintToScreen(1, "Could not open flash device!");
@@ -278,7 +285,7 @@ void RestoreSRAM(BYTE* serial, BYTE* productId) {
 	PrintToScreen(1, "Restoring SRAM from file:\n %s\n", fileName);
 	Sleep(1000);
 
-	RestoreBlocksFromFile(hDevice, (char*) fileName, 0x47, 0x57);
+	RestoreBlocksFromFile(hDevice, (char*) fileName, (NEW_NAV ? 0x1fe : 0x47), (NEW_NAV ? 0x200 : 0x57));
 
 	CloseHandle(hDevice);
     Sleep(5000);
@@ -292,7 +299,7 @@ void RunUserSRAM() {
     BYTE serial[4] = {0};
     BYTE productId[4] = {0};
     LogError(L"GetProdSection!", 0);
-    int prodResult = GetProdSection(NULL, (BYTE*)productId, (BYTE*)serial, NULL);
+    int prodResult = GetProdSection(NULL, (BYTE*)productId, NULL, (BYTE*)serial, NULL);
     if (prodResult != 0) {
         LogError(L"GetProdSection fail!", prodResult);
         PrintToScreen(1, "Could not read device section: %u\n", prodResult);
@@ -308,8 +315,10 @@ void RunUserSRAM() {
                 if (touchEvt != NULL) {
                     if (btn == -1) {
                         btn = GetPressedSRAMButton(touchEvt->xCoord, touchEvt->yCoord, 780, 20, 180, 45, 20, 4);
+						if (btn != -1 && NEW_NAV)
+							break;
                     }
-                } else if (btn != -1) {
+                } else if (btn != -1 && !NEW_NAV) {
                     // Once user has lifted their finger off / touch events have stopped, continue.
                     break;
                 }

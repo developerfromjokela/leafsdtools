@@ -1,3 +1,5 @@
+#ifndef QY8XXX
+
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
@@ -81,8 +83,8 @@ void PrintScreenWithScale(const byte* str, int scale);
 void PrintScreen(const byte* str);
 int DrawBackground(DWORD color);
 void PrintToScreen(int scale, const char* format, ...);
-void DrawRect(int x, int y, int w, int h, WORD color, WORD* pixels);
-void DrawChar(byte c, int x, int y, WORD color, int scale, WORD* pixels);
+void DrawRect(int x, int y, int w, int h, WORD color, WORD* pixels, bool transparent);
+void DrawChar(byte c, int x, int y, WORD color, int scale, WORD* pixels, bool transparent);
 int ClearArea(int x, int y, int w, int h);
 int RenderBtnText(int x, int y, const char* text, WORD color, int scale, WORD* pixels);
 int RenderButton(int x_right, int y_top, int w, int h, const char* text);
@@ -92,3 +94,5 @@ void ResetTextRenderer();
 
 
 #endif // DISPLAY_H
+
+#endif // QY8XXX check

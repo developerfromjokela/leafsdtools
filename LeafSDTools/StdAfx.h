@@ -12,6 +12,12 @@
 
 #define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
 
+#ifdef QY8XXX
+#define NEW_NAV true
+#else
+#define NEW_NAV false
+#endif
+
 // Windows Header Files:
 #include <windows.h>
 #include <ceddk.h>
@@ -19,12 +25,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-
 // Local Header Files
 
 #include "Logger.h"
 #include "Display.h"
-
+#include "DisplayDirectDraw.h"
 // TODO: reference additional headers your program requires here
 
 //{{AFX_INSERT_LOCATION}}

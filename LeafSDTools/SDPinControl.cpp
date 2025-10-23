@@ -18,6 +18,12 @@ void RunSDPinControl(bool lock) {
 	} else {
 		PrintToScreen(2, "U n l o c k   S D");
 	}
+	if (NEW_NAV) {
+		PrintToScreen(1, "\n\nSD Control is not supported on this device!");
+		WaitForScreenUntouch();
+		Sleep(3000);
+		return;
+	}
 	PrintToScreen(1, "\n\nTouch the screen to continue\nor wait 10 sec to return\n");
 	LCDTouchEvent* evt = WaitForTouch(10000);
 	if (evt != NULL) {
