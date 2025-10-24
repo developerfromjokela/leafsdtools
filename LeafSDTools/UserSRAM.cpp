@@ -165,7 +165,7 @@ bool RestoreBlocksFromFile(HANDLE flashDevice, char* fileName, DWORD start, DWOR
 			return false;
 		}
 
-		ZeroMemory(buffer, 0x10000);
+		ZeroMemory(buffer, bufferSize);
 
 		DWORD* ioControlInput = (DWORD*)malloc(FLASH_CONTROL_IO_SIZE);
 		if (ioControlInput == NULL)
@@ -230,7 +230,7 @@ void DumpUserData(BYTE* serial, BYTE* productId) {
 			((BYTE*)serial)[0], ((BYTE*)serial)[1], ((BYTE*)serial)[2], ((BYTE*)serial)[3]);
 		PrintToScreen(1, "Reading VFlash to file:\n %s\n", fileName);
 		Sleep(1000);
-		DumpBlocksToFile(hDevice, (char*)fileName, 0x1fd, 0x1fd+1);
+		DumpBlocksToFile(hDevice, (char*)fileName, (NEW_NAV ? 0x1fd: 0x57), (NEW_NAV ? (0x1fd+1) : 0x85));
 	}
 
 	CloseHandle(hDevice);
@@ -258,7 +258,7 @@ void RestoreVFlash(BYTE* serial, BYTE* productId) {
 	PrintToScreen(1, "Restoring VFlash from file:\n %s\n", fileName);
 	Sleep(1000);
 
-	RestoreBlocksFromFile(hDevice, (char*) fileName, 0x1fd, 0x1fd+1);
+	RestoreBlocksFromFile(hDevice, (char*) fileName, (NEW_NAV ? 0x1fd: 0x57), (NEW_NAV ? (0x1fd+1) : 0x85));
 
 	CloseHandle(hDevice);
     Sleep(5000);
