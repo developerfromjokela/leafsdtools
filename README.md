@@ -5,7 +5,7 @@ No hardware modifications are required.
 
 ## Current working functionality
 - [x] Backup NAND
-- [ ] Write NAND
+- [x] Write NAND
 - [x] Lock/Unlock SD cards using slot A
 - [x] Read&Write SRAM and VFlash (User Data)
 - [x] Retrieve SD Card pin
