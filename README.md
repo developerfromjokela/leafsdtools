@@ -21,6 +21,8 @@ Download latest disk image release of LEAF SD tools and write it to the SD with 
 Launching the program happens from diagnostic menu of Head Unit.
 Have your SD card flashed with latest disk image available in releases.
 
+Supported Head Unit models: QY7XXX (CarWings), QY8XXX (NissanConnect)
+
 1. With the head unit fully booted, enter the map view.
 2. Turn off media
 3. Press three times "MAP" button, then press media on/off button two times and finally press "MAP" button once again.
