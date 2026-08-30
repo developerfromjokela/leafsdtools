@@ -6,9 +6,10 @@
 #include "WriteNAND.h"
 #include "UserSRAM.h"
 #include "SDPinControl.h"
+#include "ProdInf.h"
 #include "ExitUpdateMode.h"
 
-const char* labels[] = {"Read NAND", "Write NAND", "SRAM", "SD lock", "SD unlock", "EXIT UPDATE"};
+const char* labels[] = {"Read NAND", "Write NAND", "SRAM", "SD PIN", "PRODUCT INF", "EXIT UPDATE"};
 
 char* wchar_to_ascii(const wchar_t* wchar_str) {
     if (!wchar_str) return NULL;
@@ -135,7 +136,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
 			BYTE productId[4] = {0};
 			BYTE productId2[4] = {0};
 			BYTE pin[4] = {0};
-
+			BYTE immoKey[4] = {0};
+			BYTE immoEnabled = 0;
 
 			if (!IsLoggingEnabled()) {
 				PrintToScreen(1, "Mounting SD..");
@@ -148,14 +150,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
 				LogError(L"Start log", 0);
 			}
 
-			int prodResult = GetProdSection((CHAR*)model, (BYTE*)productId,(BYTE*)productId2, (BYTE*)serial, (BYTE*)pin);
+			int prodResult = GetProdSection((CHAR*)model, (BYTE*)productId,(BYTE*)productId2, (BYTE*)serial, (BYTE*)pin, (BYTE*) immoKey, &immoEnabled);
 			if (prodResult == 0) {
 				PrintToScreen(1, "MODEL: %s\n", model);
 				PrintToScreen(1, "Product ID / ID Code: %02X %02X %02X %02X\n", ((BYTE*)productId)[0], ((BYTE*)productId)[1], ((BYTE*)productId)[2], ((BYTE*)productId)[3]);
 				if (NEW_NAV)
 					PrintToScreen(1, "Product ID / ID Code 2: %02X %02X %02X %02X\n", ((BYTE*)productId2)[0], ((BYTE*)productId2)[1], ((BYTE*)productId2)[2], ((BYTE*)productId2)[3]);
 				PrintToScreen(1, "SERIAL: %02X %02X %02X %02X\n", ((BYTE*)serial)[0], ((BYTE*)serial)[1], ((BYTE*)serial)[2], ((BYTE*)serial)[3]);
-				PrintToScreen(1, "SD Card PIN: %02X %02X %02X %02X\n", ((BYTE*)pin)[0], ((BYTE*)pin)[1], ((BYTE*)pin)[2], ((BYTE*)pin)[3]);			
+				PrintToScreen(1, "SD Card PIN: %02X %02X %02X %02X\n", ((BYTE*)pin)[0], ((BYTE*)pin)[1], ((BYTE*)pin)[2], ((BYTE*)pin)[3]);
+				PrintToScreen(1, "IMMO Code: %02X %02X %02X %02X\n", ((BYTE*)immoKey)[0], ((BYTE*)immoKey)[1], ((BYTE*)immoKey)[2], ((BYTE*)immoKey)[3]);
+				PrintToScreen(1, "IMMO Check Enabled: %02X\n", (BYTE*)immoEnabled);
 			} else {
 				PrintToScreen(1, "Could not read device section: 0x%04X \n", prodResult);
 			}
@@ -168,6 +172,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
 
 			if (dumpNandExists) {
 				RunReadNAND(true);
+			}
+
+			dmpAttrib = GetFileAttributes(L"\\SystemSD\\writenand.txt");
+            dumpNandExists = (dmpAttrib != INVALID_FILE_ATTRIBUTES && !(dmpAttrib & FILE_ATTRIBUTE_DIRECTORY));
+
+			if (dumpNandExists) {
+				RunWriteNAND(true);
 			}
 
 			RenderMenuOptions();
@@ -192,16 +203,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
 				RunReadNAND(false);
 				break;
 			case 1:
-				RunWriteNAND();
+				RunWriteNAND(false);
 				break;
 			case 2:
 				RunUserSRAM();
 				break;
 			case 3:
-				RunSDPinControl(true);
+				RunSDPinControlMenu();
 				break;
 			case 4:
-				RunSDPinControl(false);
+				RunProdInfMenu();
 				break;
 			case 5:
 				RunExitUpdate();

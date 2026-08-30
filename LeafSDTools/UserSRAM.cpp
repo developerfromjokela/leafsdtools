@@ -299,7 +299,7 @@ void RunUserSRAM() {
     BYTE serial[4] = {0};
     BYTE productId[4] = {0};
     LogError(L"GetProdSection!", 0);
-    int prodResult = GetProdSection(NULL, (BYTE*)productId, NULL, (BYTE*)serial, NULL);
+    int prodResult = GetProdSection(NULL, (BYTE*)productId, NULL, (BYTE*)serial, NULL, NULL, NULL);
     if (prodResult != 0) {
         LogError(L"GetProdSection fail!", prodResult);
         PrintToScreen(1, "Could not read device section: %u\n", prodResult);

@@ -167,6 +167,69 @@ void LogIoControlInput(LPCWSTR context, DWORD* ioControlInput) {
 }
 
 // Block sizes: 0-7: 8192 bytes, after 8: 65536 bytes
+int WriteSingleFlashBlock(int block, DWORD blockSize, BYTE* buffer) {
+	HANDLE flashDevice = CreateFileW(L"FMD1:",
+                                 GENERIC_READ | GENERIC_WRITE,
+                                 0,
+                                 NULL,
+                                 OPEN_EXISTING,
+                                 (NEW_NAV ? 0x80 : 0),
+                                 NULL);
+
+	if ( flashDevice != INVALID_HANDLE_VALUE ) {
+		DWORD ioControlInput[4] = {0};
+		ZeroMemory(ioControlInput, 0x10);
+
+		// Erase block
+		ioControlInput[0] = block;
+		ioControlInput[1] = 1;
+
+		if (LOG_FLASH_WRITING)
+			LogIoControlInput(L"ioControlInput for erase", ioControlInput);
+
+		if (!DeviceIoControl(flashDevice, (NEW_NAV ? 0x111200c : 0x8011200C), ioControlInput, 8,
+							 0, 0, NULL, NULL)) {
+			CloseHandle(flashDevice);
+			LogError(L"Cannot erase flash!", GetLastError());
+			return 4;
+		}
+
+		// Write block
+		ZeroMemory(ioControlInput, 0x10);
+
+		DWORD resultDwords[2] = {0, 0};
+		ioControlInput[0] = block;
+		ioControlInput[1] = blockSize;
+		ioControlInput[2] = (DWORD)buffer;
+		ioControlInput[3] = (DWORD)resultDwords;
+
+		if (LOG_FLASH_WRITING)
+			LogIoControlInput(L"ioControlInput for write", ioControlInput);
+
+		if (!DeviceIoControl(flashDevice, (NEW_NAV ? 0x1112004 : 0x80112004), ioControlInput, 0x10,
+							 0, 0, NULL, NULL)) {
+			CloseHandle(flashDevice);
+			LogError(L"Cannot write flash!", GetLastError());
+			return 3;
+		}
+
+
+		if (LOG_FLASH_WRITING) {
+			LogError(L"FLASH WRITE RESULT1: ", resultDwords[0]);
+			LogError(L"FLASH WRITE RESULT2: ", resultDwords[1]);
+		}
+
+		if (resultDwords[0] != blockSize) {
+			CloseHandle(flashDevice);
+			return 2;
+		}
+		CloseHandle(flashDevice);
+		return 0;
+	}
+	return 1;
+}
+
+// Block sizes: 0-7: 8192 bytes, after 8: 65536 bytes
 bool WriteSingleBlockFromFile(HANDLE flashDevice, FILE* file, BYTE* buffer, DWORD* ioControlInput, DWORD block, DWORD blockSize) {
 	ZeroMemory(ioControlInput, 0x10);
 
@@ -235,7 +298,7 @@ int ReadSingleFlashBlock(int block, DWORD size, BYTE* output) {
 		DWORD param[2] = { 0, 0 };
 		param[0] = block;
 		DWORD nRet = 0;
-		if (DeviceIoControl(hFMD1,(NEW_NAV ? 0x1112000 : 0x80112000), param, 8, &output, size, &nRet, 0)) {
+		if (DeviceIoControl(hFMD1,(NEW_NAV ? 0x1112000 : 0x80112000), param, 8, output, size, &nRet, 0)) {
 			if ( nRet == size ) {
 				CloseHandle(hFMD1);
 				return 0;
@@ -296,13 +359,14 @@ BOOL WriteProdDataToFile(int block, BYTE* prodData, DWORD dataSize) {
     return TRUE;
 }
 
-int GetProdSection(CHAR* modelName, BYTE* productId, BYTE* productId2, BYTE* serial, BYTE* pin) {
-	if (modelName == NULL && serial == NULL && productId == NULL && pin == NULL && productId2 == NULL) {
+int GetProdSection(CHAR* modelName, BYTE* productId, BYTE* productId2, BYTE* serial, BYTE* pin, BYTE* immoKey, BYTE* immoEnabled) {
+	if (modelName == NULL && serial == NULL && productId == NULL && pin == NULL && productId2 == NULL && immoKey == NULL && immoEnabled == NULL) {
 		LogError(L"GetProd: invalid args!", 3);
 	    return 3;
 	}
 
 	BYTE prodData[0x2D1];
+	ZeroMemory(&prodData, 0x2D1);
 	int flashBlockReadResult = ReadSingleFlashBlock((NEW_NAV ? 2 : 5), 0x2D1, (BYTE*)prodData);
 	if (flashBlockReadResult != 0) {
 		LogError(L"GetProd: Reading PROG from flash failed", flashBlockReadResult);
@@ -310,19 +374,25 @@ int GetProdSection(CHAR* modelName, BYTE* productId, BYTE* productId2, BYTE* ser
 	}
 
 	if (productId != NULL)
-		memcpy(productId, ((BYTE*)prodData) + 0x18, 4);
+		memcpy(productId, ((BYTE*)prodData) + 0x20, 4);
 
 	if (productId2 != NULL)
-		memcpy(productId2, ((BYTE*)prodData) + 0x28, 4);
+		memcpy(productId2, ((BYTE*)prodData) + 0x30, 4);
 
 	if (modelName != NULL)
-		memcpy(modelName, ((BYTE*)prodData) + 0x38, 8);
+		memcpy(modelName, ((BYTE*)prodData) + 0x40, 8);
 
 	if (serial != NULL)
-		memcpy(serial, ((BYTE*)prodData) + 0x48, 4);
+		memcpy(serial, ((BYTE*)prodData) + 0x50, 4);
 
 	if (pin != NULL)
-		memcpy(pin, ((BYTE*)prodData) + 0x58, 4);
+		memcpy(pin, ((BYTE*)prodData) + 0x60, 4);
+
+	if (immoKey != NULL)
+		memcpy(immoKey, ((BYTE*)prodData) + 0xA0, 4);
+
+	if (immoEnabled != NULL)
+		*immoEnabled = prodData[0x193];
 
 	return 0;
 }
@@ -333,12 +403,13 @@ int ReadFullSDPin(BYTE* pin) {
 	    return 3;
 	}
 	BYTE prodData[0x2D1];
-	int flashBlockReadResult = ReadSingleFlashBlock(5, 0x2D1, (BYTE*)prodData);
+	ZeroMemory(&prodData, 0x2D1);
+	int flashBlockReadResult = ReadSingleFlashBlock((NEW_NAV ? 2 : 5), 0x2D1, (BYTE*)prodData);
 	if (flashBlockReadResult != 0) {
 		LogError(L"GetProd: Reading PROG from flash failed", flashBlockReadResult);
 		return 1;
 	}
 
-	memcpy(pin, ((BYTE*)prodData) + 0xf8, 0x10);
+	memcpy(pin, ((BYTE*)prodData) + 0x100, 0x10);
 	return 0;
 }

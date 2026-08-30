@@ -47,7 +47,7 @@ DWORD DataSum(const BYTE *data, UINT nLen)
    return sum;
 }
 
-void RunWriteNAND() {
+void RunWriteNAND(bool unattend) {
 	ResetTextRenderer();
 	DrawBackground(0x0010);
 	AdjustBoundaries(620);
@@ -64,7 +64,7 @@ void RunWriteNAND() {
 	BYTE serial[4] = {0};
 	BYTE productId[4] = {0};
 	LogError(L"GetProdSection!", 0);
-	int prodResult = GetProdSection(NULL, (BYTE*)productId, NULL, (BYTE*)serial, NULL);
+	int prodResult = GetProdSection(NULL, (BYTE*)productId, NULL, (BYTE*)serial, NULL, NULL, NULL);
 	if (prodResult != 0) {
 
 		LogError(L"GetProdSection fail!", prodResult);
@@ -96,6 +96,13 @@ void RunWriteNAND() {
 
 			bool startFlash = false;
 			bool quitAction = false;
+
+			// Run unattended OS flash
+			if (unattend) {
+				startFlash = true;
+				flashBlocks[1] = true;
+			}
+
 			while (!startFlash && !quitAction) {
 				RenderFlashMenuOptions();
 				WaitForScreenUntouch();

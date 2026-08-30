@@ -24,6 +24,8 @@ void RunExitUpdate() {
 		WaitForScreenUntouch();
 		Sleep(50);
 
+		PrintToScreen(1, "Exiting...\n");
+
 		HINSTANCE hDll = NULL;
 		LPCAPISetBootMode pSetBootMode = NULL;
 
