@@ -10,6 +10,8 @@ No hardware modifications are required.
 - [x] Lock/Unlock SD cards using slot A
 - [x] Read&Write SRAM and VFlash (User Data)
 - [x] Retrieve SD Card pin
+- [x] Read&Write Product INF (For now only on QY7XXX)
+- [x] Disable IMMO (For now only on QY7XXX)
 
 ## Using the program
 You'll need a full-size SD card (or micro-SD with an adapter), with at least 10 GB of capacity.
