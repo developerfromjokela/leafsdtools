@@ -14,7 +14,7 @@ No hardware modifications are required.
 - [x] Disable IMMO (For now only on QY7XXX)
 
 ## Using the program
-You'll need a full-size SD card (or micro-SD with an adapter), with at least 10 GB of capacity.
+You'll need a full-size SD card (or micro-SD with an adapter), with at least (10 GB for versions older than 110, starting from 110, 600 MB is enough) of capacity.
 Download latest disk image release of LEAF SD tools and write it to the SD with tools like:
 - balenaEtcher
 - DD (`dd if=./LeafSDTools-100-beta.img of=/dev/<device> bs=8M status=progress`)
