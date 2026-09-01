@@ -11,7 +11,7 @@ No hardware modifications are required.
 - [x] Read&Write SRAM and VFlash (User Data)
 - [x] Retrieve SD Card pin
 - [x] Read&Write Product INF (For now only on QY7XXX)
-- [x] Disable IMMO (For now only on QY7XXX)
+- [x] Disable IMMO handshake / SECURE screen (For now only on QY7XXX)
 
 ## Using the program
 You'll need a full-size SD card (or micro-SD with an adapter), with at least (10 GB for versions older than 110, starting from 110, 600 MB is enough) of capacity.
