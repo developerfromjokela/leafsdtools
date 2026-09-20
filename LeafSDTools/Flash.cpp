@@ -392,7 +392,7 @@ int GetProdSection(CHAR* modelName, BYTE* productId, BYTE* productId2, BYTE* ser
 		memcpy(immoKey, ((BYTE*)prodData) + 0xA0, 4);
 
 	if (immoEnabled != NULL)
-		*immoEnabled = prodData[0x193];
+		*immoEnabled = (NEW_NAV ? prodData[0x183] : prodData[0x193]);
 
 	return 0;
 }
@@ -412,4 +412,62 @@ int ReadFullSDPin(BYTE* pin) {
 
 	memcpy(pin, ((BYTE*)prodData) + 0x100, 0x10);
 	return 0;
+}
+
+typedef int (*SYS_CNF_READ_PTR)(uint code, byte *out, int len);
+typedef int (*SYS_CNF_WRITE_PTR)(uint code, byte *data, int len);
+
+int GetSysInfConfiguration(uint code, BYTE* dataOut, int len) {
+	LogError(L"GetSysInfConfiguration", code);
+	int result = 0;
+	HMODULE hModule = LoadLibrary(L"SYS_INF.DLL");
+    
+    if (hModule != NULL)
+    {
+        SYS_CNF_READ_PTR pSysCnfRead = (SYS_CNF_READ_PTR)GetProcAddress(hModule, L"SYS_CNF_read");
+        
+        if (pSysCnfRead != NULL)
+        {            
+            result = pSysCnfRead(code, dataOut, len);
+        }
+        else
+        {
+			result = 2;
+			LogError(L"GetSysInfConfiguration Error: Could not import function", GetLastError());
+        }
+    }
+    else
+    {
+		result = 1;
+		LogError(L"GetSysInfConfiguration Error: Could not import DLL", GetLastError());
+    }
+	return result;
+}
+
+int WriteSysInfConfiguration(uint code, BYTE *dataIn, int len)
+{
+	LogError(L"WriteSysInfConfiguration", code);
+	int result = 0;
+	HMODULE hModule = LoadLibrary(L"SYS_INF.DLL");
+    
+    if (hModule != NULL)
+    {
+        SYS_CNF_WRITE_PTR pSysCnfWrite = (SYS_CNF_WRITE_PTR)GetProcAddress(hModule, L"SYS_CNF_write");
+        
+        if (pSysCnfWrite != NULL)
+        {            
+            result = pSysCnfWrite(code, dataIn, len);
+        }
+        else
+        {
+			result = 2;
+			LogError(L"GetSysInfConfiguration Error: Could not import function", GetLastError());
+        }
+    }
+    else
+    {
+		result = 1;
+		LogError(L"GetSysInfConfiguration Error: Could not import DLL", GetLastError());
+    }
+	return result;
 }

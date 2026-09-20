@@ -159,7 +159,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
 				PrintToScreen(1, "SERIAL: %02X %02X %02X %02X\n", ((BYTE*)serial)[0], ((BYTE*)serial)[1], ((BYTE*)serial)[2], ((BYTE*)serial)[3]);
 				PrintToScreen(1, "SD Card PIN: %02X %02X %02X %02X\n", ((BYTE*)pin)[0], ((BYTE*)pin)[1], ((BYTE*)pin)[2], ((BYTE*)pin)[3]);
 				PrintToScreen(1, "IMMO Code: %02X %02X %02X %02X\n", ((BYTE*)immoKey)[0], ((BYTE*)immoKey)[1], ((BYTE*)immoKey)[2], ((BYTE*)immoKey)[3]);
-				PrintToScreen(1, "IMMO Check Enabled: %02X\n", (BYTE*)immoEnabled);
+				if (NEW_NAV) {
+					// QY8XXX IMMO check stored in CONF section
+					int immoGetResult = GetSysInfConfiguration(0xF, &immoEnabled, 1);
+					if (immoGetResult == 0) {
+						PrintToScreen(1, "IMMO Check Enabled: %02X\n", (BYTE*)immoEnabled);
+					} else {
+						PrintToScreen(1, "Could not retrieve IMMO Status: %d\n", immoGetResult);
+					}
+				} else {
+					PrintToScreen(1, "IMMO Check Enabled: %02X\n", (BYTE*)immoEnabled);
+				}
 			} else {
 				PrintToScreen(1, "Could not read device section: 0x%04X \n", prodResult);
 			}

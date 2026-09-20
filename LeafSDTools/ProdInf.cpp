@@ -232,7 +232,7 @@ void DisableProdImmo(BYTE* serial, BYTE* productId) {
 		{
 			free(buffer);
 			PrintToScreen(1, "Could not open file on SD for dumping\n");
-			Sleep(5000);
+			Sleep(500);
 			WaitForScreenUntouch();
 			return;
 		}
@@ -302,7 +302,7 @@ void DumpProd(BYTE* serial, BYTE* productId) {
 	if (buffer == NULL)
 	{
 		PrintToScreen(1, "Failed to allocate buffer!\n");
-		Sleep(5000);
+		Sleep(500);
 		WaitForScreenUntouch();
 		return;
 	}
@@ -322,7 +322,7 @@ void DumpProd(BYTE* serial, BYTE* productId) {
 		((BYTE*)productId)[0], ((BYTE*)productId)[1], ((BYTE*)productId)[2], ((BYTE*)productId)[3],
 		((BYTE*)serial)[0], ((BYTE*)serial)[1], ((BYTE*)serial)[2], ((BYTE*)serial)[3]);
 	PrintToScreen(1, "Reading PROD to file:\n %s\n", debugLogFileName);
-	Sleep(1000);
+	Sleep(500);
 
 
 	file = CreateFile(
@@ -339,7 +339,7 @@ void DumpProd(BYTE* serial, BYTE* productId) {
         free(buffer);
 		CloseHandle(file);
 		PrintToScreen(1, "Could not open file on SD for dumping\n");
-		Sleep(5000);
+		Sleep(500);
 		WaitForScreenUntouch();
 		return;
 	}
@@ -372,7 +372,7 @@ void WriteProd(BYTE* serial, BYTE* productId) {
 	if (buffer == NULL)
 	{
 		PrintToScreen(1, "Failed to allocate buffer!\n");
-		Sleep(5000);
+		Sleep(500);
 		WaitForScreenUntouch();
 		return;
 	}
@@ -441,7 +441,7 @@ void WriteProd(BYTE* serial, BYTE* productId) {
 			LogError(L"PROD signature mismatch in backup file!", *(DWORD*)buffer);
 			free(buffer);
 			PrintToScreen(1, "Backup file PRODsignature invalid! Aborting write.\n");
-			Sleep(5000);
+			Sleep(500);
 			WaitForScreenUntouch();
 			return;
 		}
@@ -479,7 +479,7 @@ void WriteProd(BYTE* serial, BYTE* productId) {
 			{
 				free(buffer);
 				PrintToScreen(1, "Could not open file on SD for dumping\n");
-				Sleep(5000);
+				Sleep(500);
 				WaitForScreenUntouch();
 				return;
 			}

@@ -1,6 +1,6 @@
 # Leaf SD Tools
-<img src="https://github.com/developerfromjokela/leafsdtools/blob/master/leafsdtool.png" height="400">
-<img src="https://github.com/developerfromjokela/leafsdtools/blob/master/leafsdtool_qy8xxx.png" height="400">
+<img src="https://github.com/developerfromjokela/leafsdtools/blob/master/leafsdtool.jpeg" height="400">
+<img src="https://github.com/developerfromjokela/leafsdtools/blob/master/leafsdtool_qy8.jpeg" height="400">
 Modify, backup and unlock your Head Unit with all-in-one utility.
 No hardware modifications are required.
 
@@ -10,12 +10,13 @@ No hardware modifications are required.
 - [x] Lock/Unlock SD cards using slot A
 - [x] Read&Write SRAM and VFlash (User Data)
 - [x] Retrieve SD Card pin
-- [x] Read&Write Product INF (For now only on QY7XXX)
-- [x] Disable IMMO handshake / SECURE screen (For now only on QY7XXX)
+- [x] Read&Write Product INF
+- [x] Disable IMMO handshake / SECURE screen
 
 ## Using the program
 You'll need a full-size SD card (or micro-SD with an adapter), with at least (10 GB for versions older than 110, starting from 110, 600 MB is enough) of capacity.
 Download latest disk image release of LEAF SD tools and write it to the SD with tools like:
+- LeafSDTools Companion Restore function ([github.com/developerfromjokela/leafsdtools_companion](https://github.com/developerfromjokela/leafsdtools_companion))
 - balenaEtcher
 - DD (`dd if=./LeafSDTools-100-beta.img of=/dev/<device> bs=8M status=progress`)
 - Win32DiskImager
@@ -36,11 +37,13 @@ Supported Head Unit models: QY7XXX (CarWings), QY8XXX (NissanConnect)
 
 To exit from Software Update mode, insert stock SD card back and press YES when cancellation option comes available.  
 
-> With version 104, you can also exit Software Update mode by pressing EXIT UPDATE button in main menu
+> With version 104 and newer, you can also exit Software Update mode by pressing EXIT UPDATE button in main menu
 
 ### GUIDE FOR QY8XXX
 1. Tilt the screen and remove SD. Insert SD with Leaf SD Tools
 2. Turn off and turn back on. The program will boot in a moment.
+3. When you are done, REMEMBER TO EXIT UPDATE! Otherwise you will be stuck in update mode.
+
 
 TO EXIT THE PROGRAM:
 1. Press Exit Update

@@ -21,4 +21,8 @@ int CheckMountStatus(WORD command);
 void InitSDCards();
 void SDController_CMD17();
 
+// SYS_INF
+int GetSysInfConfiguration(uint code, BYTE* dataOut, int len);
+int WriteSysInfConfiguration(uint code, BYTE *dataIn, int len);
+
 #endif

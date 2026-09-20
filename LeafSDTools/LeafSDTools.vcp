@@ -119,12 +119,12 @@ DEP_CPP_EXITU=\
 	".\Logger.h"\
 	".\StdAfx.h"\
 	".\Touch.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_EXITU=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -139,12 +139,12 @@ DEP_CPP_EXITU=\
 	".\Logger.h"\
 	".\StdAfx.h"\
 	".\Touch.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_EXITU=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -156,44 +156,43 @@ NODEP_CPP_EXITU=\
 # Begin Source File
 
 SOURCE=.\ProdInf.cpp
+DEP_CPP_PRODI=\
+	".\Display.h"\
+	".\DisplayDirectDraw.h"\
+	".\Flash.h"\
+	".\Logger.h"\
+	".\ProdInf.h"\
+	".\StdAfx.h"\
+	".\Touch.h"\
+	{$(INCLUDE)}"kfuncs.h"\
+	
+NODEP_CPP_PRODI=\
+	".\dkmacro.h"\
+	".\eBus.h"\
+	".\eddk.h"\
+	".\m.h"\
+	".\oolhelp.h"\
+	".\tstatus.h"\
+	
 
 !IF  "$(CFG)" == "LeafSDTools - Win32 (WCE SH4) Release"
 
-DEP_CPP_PRODI=\
-	".\Display.h"\
-	".\DisplayDirectDraw.h"\
-	".\Flash.h"\
-	".\Logger.h"\
-	".\ProdInf.h"\
-	".\StdAfx.h"\
-	".\Touch.h"\
-	{$(INCLUDE)}"CeBus.h"\
-	{$(INCLUDE)}"ceddk.h"\
-	{$(INCLUDE)}"ddkmacro.h"\
-	{$(INCLUDE)}"ntstatus.h"\
-	{$(INCLUDE)}"pkfuncs.h"\
-	{$(INCLUDE)}"pm.h"\
-	{$(INCLUDE)}"toolhelp.h"\
-	
-
 !ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE ARMV4I) Release"
 
-DEP_CPP_PRODI=\
-	".\Display.h"\
-	".\DisplayDirectDraw.h"\
-	".\Flash.h"\
-	".\Logger.h"\
-	".\ProdInf.h"\
-	".\StdAfx.h"\
-	".\Touch.h"\
-	{$(INCLUDE)}"CeBus.h"\
-	{$(INCLUDE)}"ceddk.h"\
-	{$(INCLUDE)}"ddkmacro.h"\
-	{$(INCLUDE)}"ntstatus.h"\
-	{$(INCLUDE)}"pkfuncs.h"\
-	{$(INCLUDE)}"pm.h"\
-	{$(INCLUDE)}"toolhelp.h"\
-	
+# PROP Exclude_From_Build 1
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\ProdInf_QY8.cpp
+
+!IF  "$(CFG)" == "LeafSDTools - Win32 (WCE SH4) Release"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "LeafSDTools - Win32 (WCE ARMV4I) Release"
 
 !ENDIF 
 
@@ -212,12 +211,12 @@ DEP_CPP_READN=\
 	".\ReadNAND.h"\
 	".\StdAfx.h"\
 	".\Touch.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_READN=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -233,12 +232,12 @@ DEP_CPP_READN=\
 	".\ReadNAND.h"\
 	".\StdAfx.h"\
 	".\Touch.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_READN=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -261,12 +260,12 @@ DEP_CPP_SDPIN=\
 	".\SDPinControl.h"\
 	".\StdAfx.h"\
 	".\Touch.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_SDPIN=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -282,12 +281,12 @@ DEP_CPP_SDPIN=\
 	".\SDPinControl.h"\
 	".\StdAfx.h"\
 	".\Touch.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_SDPIN=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -310,12 +309,12 @@ DEP_CPP_USERS=\
 	".\StdAfx.h"\
 	".\Touch.h"\
 	".\UserSRAM.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_USERS=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -331,12 +330,12 @@ DEP_CPP_USERS=\
 	".\StdAfx.h"\
 	".\Touch.h"\
 	".\UserSRAM.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_USERS=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -356,12 +355,12 @@ DEP_CPP_WRITE=\
 	".\StdAfx.h"\
 	".\Touch.h"\
 	".\WriteNAND.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_WRITE=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -399,12 +398,12 @@ DEP_CPP_DISPL=\
 	".\Font.h"\
 	".\Logger.h"\
 	".\StdAfx.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_DISPL=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -460,12 +459,12 @@ DEP_CPP_FLASH=\
 	".\Flash.h"\
 	".\Logger.h"\
 	".\StdAfx.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_FLASH=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -479,12 +478,12 @@ DEP_CPP_FLASH=\
 	".\Flash.h"\
 	".\Logger.h"\
 	".\StdAfx.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_FLASH=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -512,12 +511,12 @@ DEP_CPP_LEAFS=\
 	".\Touch.h"\
 	".\UserSRAM.h"\
 	".\WriteNAND.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_LEAFS=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -538,12 +537,12 @@ DEP_CPP_LEAFS=\
 	".\Touch.h"\
 	".\UserSRAM.h"\
 	".\WriteNAND.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_LEAFS=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -574,12 +573,12 @@ DEP_CPP_LOGGE=\
 	".\DisplayDirectDraw.h"\
 	".\Logger.h"\
 	".\StdAfx.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_LOGGE=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -592,12 +591,12 @@ DEP_CPP_LOGGE=\
 	".\DisplayDirectDraw.h"\
 	".\Logger.h"\
 	".\StdAfx.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_LOGGE=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -617,12 +616,12 @@ DEP_CPP_STDAF=\
 	".\DisplayDirectDraw.h"\
 	".\Logger.h"\
 	".\StdAfx.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_STDAF=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -636,12 +635,12 @@ DEP_CPP_STDAF=\
 	".\DisplayDirectDraw.h"\
 	".\Logger.h"\
 	".\StdAfx.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_STDAF=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -662,12 +661,12 @@ DEP_CPP_TOUCH=\
 	".\Logger.h"\
 	".\StdAfx.h"\
 	".\Touch.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_TOUCH=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
@@ -681,12 +680,12 @@ DEP_CPP_TOUCH=\
 	".\Logger.h"\
 	".\StdAfx.h"\
 	".\Touch.h"\
-	{$(INCLUDE)}"kfuncs.h"\
 	
 NODEP_CPP_TOUCH=\
 	".\dkmacro.h"\
 	".\eBus.h"\
 	".\eddk.h"\
+	".\funcs.h"\
 	".\m.h"\
 	".\oolhelp.h"\
 	".\tstatus.h"\
