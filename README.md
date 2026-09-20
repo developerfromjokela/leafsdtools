@@ -41,7 +41,7 @@ To exit from Software Update mode, insert stock SD card back and press YES when 
 
 ### GUIDE FOR QY8XXX
 1. Tilt the screen and remove SD. Insert SD with Leaf SD Tools
-2. Turn off and turn back on. The program will boot in a moment.
+2. If LeafSDTools does not launch automatically, turn ACC power off and turn back on. The program should boot in a moment, 5-10 sec.
 3. When you are done, REMEMBER TO EXIT UPDATE! Otherwise you will be stuck in update mode.
 
 
