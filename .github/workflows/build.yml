@@ -11,9 +11,9 @@ permissions:
 jobs:
   qy8xxx:
     name: LeafSDTools.exe (QY8XXX, ARMV4I)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install cegcc mingw32ce 0.59.1
         run: sudo ci/install-cegcc.sh /opt/mingw32ce
@@ -25,7 +25,7 @@ jobs:
           make -j"$(nproc)" check
           sha256sum build/LeafSDTools.exe
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: LeafSDTools-QY8XXX
           path: build/LeafSDTools.exe
