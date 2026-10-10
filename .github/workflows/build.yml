@@ -1,0 +1,32 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qy8xxx:
+    name: LeafSDTools.exe (QY8XXX, ARMV4I)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cegcc mingw32ce 0.59.1
+        run: sudo ci/install-cegcc.sh /opt/mingw32ce
+
+      - name: Build
+        run: |
+          export PATH=/opt/mingw32ce/bin:$PATH
+          export LD_LIBRARY_PATH=/opt/mingw32ce/lib32
+          make -j"$(nproc)" check
+          sha256sum build/LeafSDTools.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LeafSDTools-QY8XXX
+          path: build/LeafSDTools.exe
+          if-no-files-found: error

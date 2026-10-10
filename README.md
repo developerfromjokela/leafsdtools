@@ -51,3 +51,21 @@ TO EXIT THE PROGRAM:
 3. Once green screen appears, remove the SD and insert your stock card in. Turn off and back on, you'll boot back to the OS.
 
 **NOTE FOR QY7XXX ONLY! Make sure your stock SD is locked before exiting update mode! Head Unit won't boot back if SD is unlocked.**
+
+
+## Building without eMbedded Visual C++ (QY8XXX only)
+
+The QY8XXX (ARMV4I) variant can be built on Linux with the
+[cegcc](https://sourceforge.net/projects/cegcc/) `mingw32ce` cross compiler:
+
+```sh
+sudo ci/install-cegcc.sh /opt/mingw32ce     # Debian/Ubuntu, x86-64
+export PATH=/opt/mingw32ce/bin:$PATH LD_LIBRARY_PATH=/opt/mingw32ce/lib32
+make check                                  # -> build/LeafSDTools.exe
+```
+
+GitHub Actions runs the same build on every push and pull request and
+uploads `LeafSDTools.exe` as an artifact. The sources are compiled unchanged;
+what cegcc lacks is supplied from `compat/`. Differences from the eVC4 build:
+structured exception handling (`__try`/`__except`) is compiled out, and the
+QY7XXX (SH4) variant is not covered, because cegcc targets ARM only.
