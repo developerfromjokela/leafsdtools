@@ -75,3 +75,17 @@ check: $(OUT)
 
 clean:
 	rm -rf $(BUILD)
+
+
+BASE_IMAGE ?= build/LeafSDTools-base.img
+PYTHON ?= python3
+CARD_IMAGE := build/LeafSDTools-QY8XXX.img
+
+.PHONY: card-image
+card-image: check
+	@test -s "$(BASE_IMAGE)" || { echo "missing BASE_IMAGE=$(BASE_IMAGE)"; exit 1; }
+	@mkdir -p $(BUILD)
+	$(PYTHON) ci/make-card-image.py "$(BASE_IMAGE)" "$(OUT)" "$(CARD_IMAGE)"
+	sha256sum "$(CARD_IMAGE)" > "$(CARD_IMAGE).sha256"
+	gzip -n -9 -c "$(CARD_IMAGE)" > "$(CARD_IMAGE).gz"
+	cat "$(CARD_IMAGE).sha256"

@@ -30,3 +30,30 @@ jobs:
           name: LeafSDTools-QY8XXX
           path: build/LeafSDTools.exe
           if-no-files-found: error
+
+  card-image:
+    name: QY8XXX card image
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install cegcc mingw32ce 0.59.1
+        run: sudo ci/install-cegcc.sh /opt/mingw32ce
+
+      - name: Fetch pinned upstream release image
+        run: python3 ci/fetch-base-image.py
+
+      - name: Build card image
+        run: |
+          export PATH=/opt/mingw32ce/bin:$PATH
+          export LD_LIBRARY_PATH=/opt/mingw32ce/lib32
+          make card-image BASE_IMAGE=build/LeafSDTools-base.img
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: LeafSDTools-QY8XXX-card-image
+          path: |
+            build/LeafSDTools-QY8XXX.img.gz
+            build/LeafSDTools-QY8XXX.img.sha256
+          if-no-files-found: error
