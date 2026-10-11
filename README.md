@@ -74,8 +74,21 @@ QY7XXX (SH4) variant is not covered, because cegcc targets ARM only.
 
 The card image starts from the upstream `LeafSDTools-111-beta.img` release.
 The CI workflow pins and verifies the upstream release archive SHA-256, then
-replaces only `PRGUpdate.exe` in the QY8XXX ARM updater image. Other card
-contents, including the FAT partitions and QY7XXX SH-4 banks, are preserved.
-Run the `Build` workflow with `workflow_dispatch` or push a release tag to
-build the compressed `.img.gz` artifact and its `.sha256` file. Ordinary pushes
-continue to build only `LeafSDTools.exe`.
+replaces `PRGUpdate.exe` in the QY8XXX ARM updater image. By default, other card
+contents, including the QY7XXX SH-4 banks, are preserved. Run the `Build`
+workflow with `workflow_dispatch` or push a release tag to build the compressed
+`.img.gz` artifact and its `.sha256` file. Ordinary pushes continue to build
+only `LeafSDTools.exe`.
+
+To also replace the QY7XXX updater locally, pass a Windows CE SH-4 executable
+to the same target:
+
+```sh
+make card-image BASE_IMAGE=build/LeafSDTools-base.img \
+  SH4_EXE=/path/to/LeafSDTools-sh4.exe
+```
+
+The image builder verifies the SH-4 PE machine type and locates both mirrored
+10 MiB QY7XXX banks from their ROM signatures before updating them. The
+optional SH-4 executable is not built or passed by GitHub Actions; the workflow
+continues to build the QY8XXX ARM image only.
