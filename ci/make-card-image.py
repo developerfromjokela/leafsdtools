@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """Replace PRGUpdate.exe in the upstream QY8XXX card image."""
 import hashlib
+import mmap
 import struct
 import sys
 
 PREAMBLE = 0x200
 ARM_OFFSET = 0x14600000
 ARM_SLOT_SIZE = 0x3C00000
+NB_HEADER_SIZE = 0x200
+SH4_BANK_SIZE = 0xA00000
+SH4_BANK_SLOTS = (0x03E00000, 0x04800000)
 PHYSFIRST = 0x88000000
 ROM_SIG = b"ECEC"
 EXCLUDED = {0x30, 0x34, 0x38, 0x3C, 0x84, 0x88, 0x8C}
@@ -258,32 +262,202 @@ def patch_slot(slot, exe):
     img.release()
 
 
-def main():
-    if len(sys.argv) != 4:
-        raise SystemExit("usage: make-card-image.py BASE.img LeafSDTools.exe OUTPUT.img")
-    base_path, exe_path, output_path = sys.argv[1:]
-    image_size = __import__("os").path.getsize(base_path)
-    with open(exe_path, "rb") as source:
-        exe = source.read()
-    if image_size < ARM_OFFSET + ARM_SLOT_SIZE:
-        raise ValueError("base image is too short for QY8XXX ARM slot")
-    with open(base_path, "rb") as source:
-        source.seek(ARM_OFFSET)
-        slot = bytearray(source.read(ARM_SLOT_SIZE))
-    patch_slot(slot, exe)
+def sh4_checksum(img, length):
+    """Return the QY7 SUM4 value, excluding the two checksum fields."""
+    total = 0
+    for offset in range(0, length & ~3, 4):
+        if 0x30 <= offset < 0x36 or 0x84 <= offset < 0x8C:
+            continue
+        total += u32(img, offset)
+    return total & 0xFFFFFFFF
+
+
+def find_sh4_slots(image_path):
+    """Locate the two QY7 NB images by ECEC and verify their expected slots."""
+    found = []
+    with open(image_path, "rb") as source:
+        with mmap.mmap(source.fileno(), 0, access=mmap.ACCESS_READ) as image:
+            offset = image.find(ROM_SIG)
+            while offset >= 0:
+                slot = offset - NB_HEADER_SIZE - 0x40
+                if slot >= 0 and offset + 0x10 <= len(image):
+                    xip = offset - 0x40
+                    if (u32(image, xip + 0x44) >> 24) == 0x88:
+                        romhdr = u32(image, xip + 0x44) - PHYSFIRST + xip
+                        if romhdr + 0x54 <= len(image):
+                            physfirst = u32(image, romhdr + 0x08)
+                            physlast = u32(image, romhdr + 0x0C)
+                            modules = u32(image, romhdr + 0x10)
+                            cpu = u16(image, romhdr + 0x44)
+                            if (physfirst == PHYSFIRST and physlast > physfirst
+                                    and 0 < modules < 4096 and cpu == 0x01A6):
+                                found.append(slot)
+                offset = image.find(ROM_SIG, offset + 1)
+    if tuple(found) != SH4_BANK_SLOTS:
+        raise ValueError("QY7 SH-4 slots differ from expected offsets: "
+                         + ", ".join(hex(value) for value in found))
+    return found
+
+
+def patch_sh4_slot(slot, exe):
+    """Replace PRGUpdate.exe in one complete QY7 NB bank."""
+    if len(slot) != SH4_BANK_SIZE:
+        raise ValueError("SH-4 bank must be exactly 0xa00000 bytes")
+    img = memoryview(slot)[NB_HEADER_SIZE:]
+    if bytes(img[0x40:0x44]) != ROM_SIG or bytes(img[0x80:0x84]) != b"SUM4":
+        raise ValueError("SH-4 ROM signatures are missing")
+    length = u32(img, 0x32)
+    if length != u32(img, 0x88) or length != u32(slot, 0):
+        raise ValueError("SH-4 ROM length fields disagree")
+    if sh4_checksum(img, length) != u32(img, 0x84):
+        raise ValueError("source SH-4 ROM checksum is invalid")
+    romhdr = u32(img, 0x44) - PHYSFIRST
+    if u32(img, romhdr + 0x0C) - PHYSFIRST != length:
+        raise ValueError("SH-4 ROMHDR physlast does not match image length")
+    if u16(img, romhdr + 0x44) != 0x01A6:
+        raise ValueError("QY7 ROMHDR is not SH-4")
+
+    count = u32(img, romhdr + 0x10)
+    toc = romhdr + 0x54
+    target = None
+    modules = []
+    max_load = 0
+    rom = img.tobytes()
+    for index in range(count):
+        entry = toc + index * 0x20
+        name_offset = u32(img, entry + 0x10) - PHYSFIRST
+        end = rom.index(b"\0", name_offset)
+        name = rom[name_offset:end].decode("latin1").lower()
+        e32 = u32(img, entry + 0x14) - PHYSFIRST
+        load = u32(img, entry + 0x1C)
+        end_load = load + u32(img, e32 + 0x14)
+        max_load = max(max_load, end_load)
+        if name == "prgupdate.exe":
+            target = (entry, e32, index, load)
+        else:
+            modules.append((load, end_load))
+    if target is None:
+        raise ValueError("PRGUpdate.exe not present in SH-4 ROM TOC")
+
+    pe = u32(exe, 0x3C)
+    if u16(exe, pe + 4) != 0x01A6:
+        raise ValueError("SH-4 slot requires a Windows CE SH-4 executable")
+    sections, entry, vbase, module_size, imp_rva, imp_size, _ = parse_pe(exe)
+    old_entry, old_e32, module_index, old_load = target
+    for section in sections:
+        if section["psize"] > section["vsize"]:
+            section["data"] = section["data"][:section["vsize"]]
+            section["psize"] = section["vsize"]
+
+    cursor = align(length, 0x10)
+    for section in sections:
+        if section["psize"]:
+            section["offset"] = cursor
+            cursor = align(cursor + section["psize"], 4)
+        else:
+            section["offset"] = None
+    o32 = align(cursor, 4)
+    cursor = o32 + len(sections) * 0x18
+    e32 = align(cursor, 4)
+    cursor = e32 + 0x74
+    load = align(cursor, 0x100)
+    load_size = align(max(section["vsize"] for section in sections), 0x1000)
+    new_length = align(load + load_size, 4)
+    if NB_HEADER_SIZE + new_length > len(slot):
+        raise ValueError("replacement module does not fit SH-4 bank")
+
+    load_va = old_load
+    if any(start < old_load + module_size and finish > old_load
+           for start, finish in modules):
+        load_va = align(max_load, 0x1000)
+    img[length:new_length] = b"\0" * (new_length - length)
+    for section in sections:
+        if section["offset"] is not None:
+            start = section["offset"]
+            img[start:start + section["psize"]] = section["data"]
+    for index, section in enumerate(sections):
+        data_offset = section["offset"] if section["offset"] is not None else new_length
+        flags = section["flags"] & ~0x00F00000
+        struct.pack_into("<IIIIII", img, o32 + index * 0x18,
+                         section["vsize"], section["rva"], section["psize"],
+                         PHYSFIRST + data_offset, vbase + section["rva"], flags)
+    e32_data = bytearray(0x74)
+    struct.pack_into("<HHII", e32_data, 0, len(sections), 0x010F, entry, vbase)
+    struct.pack_into("<HH", e32_data, 0x0C, 5, 0)
+    struct.pack_into("<III", e32_data, 0x10, 0x10000, module_size, 0)
+    struct.pack_into("<I", e32_data, 0x20, u32(img, old_e32 + 0x20))
+    struct.pack_into("<II", e32_data, 0x2C, imp_rva, imp_size)
+    struct.pack_into("<H", e32_data, 0x6C, 9)
+    img[e32:e32 + 0x74] = e32_data
+    struct.pack_into("<I", img, old_entry + 0x0C, len(exe))
+    struct.pack_into("<III", img, old_entry + 0x14,
+                     PHYSFIRST + e32, PHYSFIRST + o32, load_va)
+    struct.pack_into("<I", img, romhdr + 0x0C, PHYSFIRST + new_length)
+    struct.pack_into("<I", img, 0x32, new_length)
+    struct.pack_into("<I", img, 0x88, new_length)
+    struct.pack_into("<I", slot, 0, new_length)
+    struct.pack_into("<I", img, 0x84, sh4_checksum(img, new_length))
+    img.release()
+    print("  SH-4 bank module #%d: length 0x%x -> 0x%x, SUM4=0x%08x"
+          % (module_index, length, new_length, u32(slot, NB_HEADER_SIZE + 0x84)))
+
+
+def write_patched_image(base_path, output_path, patches):
+    patches.sort(key=lambda item: item[0])
     with open(base_path, "rb") as source, open(output_path, "wb") as output:
-        remaining = ARM_OFFSET
-        while remaining:
-            block = source.read(min(1024 * 1024, remaining))
-            output.write(block)
-            remaining -= len(block)
-        output.write(slot)
-        source.seek(ARM_OFFSET + ARM_SLOT_SIZE)
+        position = 0
+        for offset, data in patches:
+            if offset < position:
+                raise ValueError("image replacement ranges overlap")
+            source.seek(position)
+            remaining = offset - position
+            while remaining:
+                block = source.read(min(1024 * 1024, remaining))
+                if not block:
+                    raise ValueError("base image ended before replacement slot")
+                output.write(block)
+                remaining -= len(block)
+            output.write(data)
+            position = offset + len(data)
+        source.seek(position)
         while True:
             block = source.read(1024 * 1024)
             if not block:
                 break
             output.write(block)
+
+
+def main():
+    args = sys.argv[1:]
+    sh4_exe_path = None
+    if len(args) == 5 and args[3] == "--sh4-exe":
+        base_path, exe_path, output_path, _, sh4_exe_path = args
+    elif len(args) == 3:
+        base_path, exe_path, output_path = args
+    else:
+        raise SystemExit("usage: make-card-image.py BASE.img ARM.exe OUTPUT.img "
+                         "[--sh4-exe SH4.exe]")
+    image_size = __import__("os").path.getsize(base_path)
+    with open(exe_path, "rb") as source:
+        exe = source.read()
+    if image_size < ARM_OFFSET + ARM_SLOT_SIZE:
+        raise ValueError("base image is too short for QY8XXX ARM slot")
+    patches = []
+    with open(base_path, "rb") as source:
+        source.seek(ARM_OFFSET)
+        arm_slot = bytearray(source.read(ARM_SLOT_SIZE))
+    patch_slot(arm_slot, exe)
+    patches.append((ARM_OFFSET, arm_slot))
+    if sh4_exe_path:
+        with open(sh4_exe_path, "rb") as source:
+            sh4_exe = source.read()
+        for offset in find_sh4_slots(base_path):
+            with open(base_path, "rb") as source:
+                source.seek(offset)
+                sh4_slot = bytearray(source.read(SH4_BANK_SIZE))
+            patch_sh4_slot(sh4_slot, sh4_exe)
+            patches.append((offset, sh4_slot))
+    write_patched_image(base_path, output_path, patches)
     for name, path in (("base", base_path), ("image", output_path)):
         digest = hashlib.sha256()
         with open(path, "rb") as source:
