@@ -69,3 +69,13 @@ uploads `LeafSDTools.exe` as an artifact. The sources are compiled unchanged;
 what cegcc lacks is supplied from `compat/`. Differences from the eVC4 build:
 structured exception handling (`__try`/`__except`) is compiled out, and the
 QY7XXX (SH4) variant is not covered, because cegcc targets ARM only.
+
+## Building a QY8XXX card image
+
+The card image starts from the upstream `LeafSDTools-111-beta.img` release.
+The CI workflow pins and verifies the upstream release archive SHA-256, then
+replaces only `PRGUpdate.exe` in the QY8XXX ARM updater image. Other card
+contents, including the FAT partitions and QY7XXX SH-4 banks, are preserved.
+Run the `Build` workflow with `workflow_dispatch` or push a release tag to
+build the compressed `.img.gz` artifact and its `.sha256` file. Ordinary pushes
+continue to build only `LeafSDTools.exe`.
