@@ -53,42 +53,43 @@ TO EXIT THE PROGRAM:
 **NOTE FOR QY7XXX ONLY! Make sure your stock SD is locked before exiting update mode! Head Unit won't boot back if SD is unlocked.**
 
 
-## Building without eMbedded Visual C++ (QY8XXX only)
+## Building without eMbedded Visual C++
 
-The QY8XXX (ARMV4I) variant can be built on Linux with the
-[cegcc](https://sourceforge.net/projects/cegcc/) `mingw32ce` cross compiler:
+Both variants are built on Linux with the open CeGCC toolchain from
+[palian-tech/cegcc-build](https://github.com/palian-tech/cegcc-build)
+(GCC 9.3; `arm-mingw32ce` and `sh4-mingw32ce`, the latter following the
+calling convention of the Microsoft SH-4 compiler), published as a Docker
+image:
 
 ```sh
-sudo ci/install-cegcc.sh /opt/mingw32ce     # Debian/Ubuntu, x86-64
-export PATH=/opt/mingw32ce/bin:$PATH LD_LIBRARY_PATH=/opt/mingw32ce/lib32
-make check                                  # -> build/LeafSDTools.exe
+docker run --rm -v "$PWD":/w -w /w ghcr.io/palian-tech/cegcc:v9.3.0-ce.1 \
+  sh -c 'make TARGET=arm check && make TARGET=sh4 check'
+# -> build/arm/LeafSDTools.exe (QY8XXX), build/sh4/LeafSDTools.exe (QY7XXX)
 ```
 
 GitHub Actions runs the same build on every push and pull request and
-uploads `LeafSDTools.exe` as an artifact. The sources are compiled unchanged;
-what cegcc lacks is supplied from `compat/`. Differences from the eVC4 build:
-structured exception handling (`__try`/`__except`) is compiled out, and the
-QY7XXX (SH4) variant is not covered, because cegcc targets ARM only.
+uploads both executables as artifacts. The sources are compiled unchanged;
+what the toolchain lacks is supplied from `compat/`. One difference from the
+eVC4 build: structured exception handling (`__try`/`__except`) is compiled
+out.
 
-## Building a QY8XXX card image
+## Building a card image
 
 The card image starts from the upstream `LeafSDTools-111-beta.img` release.
 The CI workflow pins and verifies the upstream release archive SHA-256, then
-replaces `PRGUpdate.exe` in the QY8XXX ARM updater image. By default, other card
-contents, including the QY7XXX SH-4 banks, are preserved. Run the `Build`
-workflow with `workflow_dispatch` or push a release tag to build the compressed
-`.img.gz` artifact and its `.sha256` file. Ordinary pushes continue to build
-only `LeafSDTools.exe`.
+replaces `PRGUpdate.exe` in the QY8XXX ARM updater image and in both mirrored
+QY7XXX SH-4 updater banks. Other card contents are preserved. Run the `Build`
+workflow with `workflow_dispatch` or push a release tag to build the
+compressed `.img.gz` artifact and its `.sha256` file. Ordinary pushes build
+only the two executables.
 
-To also replace the QY7XXX updater locally, pass a Windows CE SH-4 executable
-to the same target:
+Locally, inside the same image (Python 3 is needed for the image builder):
 
 ```sh
-make card-image BASE_IMAGE=build/LeafSDTools-base.img \
-  SH4_EXE=/path/to/LeafSDTools-sh4.exe
+make card-image BASE_IMAGE=build/LeafSDTools-base.img
+# -> build/LeafSDTools.img(.gz, .sha256)
 ```
 
-The image builder verifies the SH-4 PE machine type and locates both mirrored
-10 MiB QY7XXX banks from their ROM signatures before updating them. The
-optional SH-4 executable is not built or passed by GitHub Actions; the workflow
-continues to build the QY8XXX ARM image only.
+The image builder verifies each PE machine type, locates both 10 MiB QY7XXX
+banks from their ROM signatures and places uncompressed module sections on
+4 KiB boundaries, as the Windows CE ROM loader requires.

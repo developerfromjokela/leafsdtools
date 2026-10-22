@@ -8,52 +8,56 @@ on:
 permissions:
   contents: read
 
+# Open CeGCC toolchain with arm-mingw32ce and sh4-mingw32ce:
+# https://github.com/palian-tech/cegcc-build
+
 jobs:
-  qy8xxx:
-    name: LeafSDTools.exe (QY8XXX, ARMV4I)
+  exe:
+    name: LeafSDTools.exe (${{ matrix.unit }})
     runs-on: ubuntu-26.04
+    container: ghcr.io/palian-tech/cegcc:v9.3.0-ce.1
+    strategy:
+      matrix:
+        include:
+          - target: arm
+            unit: QY8XXX
+          - target: sh4
+            unit: QY7XXX
     steps:
       - uses: actions/checkout@v7
-
-      - name: Install cegcc mingw32ce 0.59.1
-        run: sudo ci/install-cegcc.sh /opt/mingw32ce
 
       - name: Build
         run: |
-          export PATH=/opt/mingw32ce/bin:$PATH
-          export LD_LIBRARY_PATH=/opt/mingw32ce/lib32
-          make -j"$(nproc)" check
-          sha256sum build/LeafSDTools.exe
+          make -j"$(nproc)" TARGET=${{ matrix.target }} check
+          sha256sum build/${{ matrix.target }}/LeafSDTools.exe
 
       - uses: actions/upload-artifact@v7
         with:
-          name: LeafSDTools-QY8XXX
-          path: build/LeafSDTools.exe
+          name: LeafSDTools-${{ matrix.unit }}
+          path: build/${{ matrix.target }}/LeafSDTools.exe
           if-no-files-found: error
 
   card-image:
-    name: QY8XXX card image
+    name: Card image (QY8XXX + QY7XXX)
     if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-26.04
+    container: ghcr.io/palian-tech/cegcc:v9.3.0-ce.1
     steps:
       - uses: actions/checkout@v7
 
-      - name: Install cegcc mingw32ce 0.59.1
-        run: sudo ci/install-cegcc.sh /opt/mingw32ce
+      - name: Install Python
+        run: apt-get update && apt-get install -y --no-install-recommends python3 ca-certificates
 
       - name: Fetch pinned upstream release image
         run: python3 ci/fetch-base-image.py
 
       - name: Build card image
-        run: |
-          export PATH=/opt/mingw32ce/bin:$PATH
-          export LD_LIBRARY_PATH=/opt/mingw32ce/lib32
-          make card-image BASE_IMAGE=build/LeafSDTools-base.img
+        run: make card-image BASE_IMAGE=build/LeafSDTools-base.img
 
       - uses: actions/upload-artifact@v7
         with:
-          name: LeafSDTools-QY8XXX-card-image
+          name: LeafSDTools-card-image
           path: |
-            build/LeafSDTools-QY8XXX.img.gz
-            build/LeafSDTools-QY8XXX.img.sha256
+            build/LeafSDTools.img.gz
+            build/LeafSDTools.img.sha256
           if-no-files-found: error
