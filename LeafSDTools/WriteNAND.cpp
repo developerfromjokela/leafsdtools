@@ -161,8 +161,8 @@ void RunWriteNAND(bool unattend) {
 
 			if (startFlash) {
 
-				flashBlocks[9] = false;
-				flashBlocks[10] = false;
+				flashBlocks[8] = false; // START
+				flashBlocks[9] = false; // CANCEL
 
 				RenderFlashMenuOptions();
 				Sleep(400);
