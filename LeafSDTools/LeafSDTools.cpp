@@ -131,7 +131,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
 			PrintToScreen(2, "L e a f   S D   T o o l ");
 			PrintToScreen(1, "\n\nVersion %s\n", TOOL_VERSION);
 
-			CHAR model[8] = {0};
+			CHAR model[9] = {0}; // 8 characters from PROD + terminating NUL
 			BYTE serial[4] = {0};
 			BYTE productId[4] = {0};
 			BYTE productId2[4] = {0};
