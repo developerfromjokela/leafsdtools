@@ -1,6 +1,6 @@
 // Force-included (-include) for every translation unit when building with
-// cegcc / mingw32ce (GCC 4.4). Supplies what eMbedded Visual C++ 4 provides
-// and the cegcc sysroot does not. Not used by the eVC4 project.
+// the open CeGCC toolchain (mingw32ce). Supplies what eMbedded Visual C++ 4 provides
+// and the CeGCC sysroot does not. Not used by the eVC4 project.
 #ifndef LEAFSDTOOLS_COMPAT_CEGCC_H
 #define LEAFSDTOOLS_COMPAT_CEGCC_H
 
