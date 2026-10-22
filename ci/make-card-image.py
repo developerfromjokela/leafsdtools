@@ -349,11 +349,13 @@ def patch_sh4_slot(slot, exe):
             section["data"] = section["data"][:section["vsize"]]
             section["psize"] = section["vsize"]
 
-    cursor = align(length, 0x10)
+    # The kernel maps uncompressed ROM sections in place, page by page, so
+    # each section must start on a 4 KiB boundary.
+    cursor = align(length, 0x1000)
     for section in sections:
         if section["psize"]:
             section["offset"] = cursor
-            cursor = align(cursor + section["psize"], 4)
+            cursor = align(cursor + section["psize"], 0x1000)
         else:
             section["offset"] = None
     o32 = align(cursor, 4)
