@@ -53,43 +53,6 @@ TO EXIT THE PROGRAM:
 **NOTE FOR QY7XXX ONLY! Make sure your stock SD is locked before exiting update mode! Head Unit won't boot back if SD is unlocked.**
 
 
-## Building without eMbedded Visual C++
+## Building
 
-Both variants are built on Linux with the open CeGCC toolchain from
-[palian-tech/cegcc-build](https://github.com/palian-tech/cegcc-build)
-(GCC 9.3; `arm-mingw32ce` and `sh4-mingw32ce`, the latter following the
-calling convention of the Microsoft SH-4 compiler), published as a Docker
-image:
-
-```sh
-docker run --rm -v "$PWD":/w -w /w ghcr.io/palian-tech/cegcc:v9.3.0-ce.1 \
-  sh -c 'make TARGET=arm check && make TARGET=sh4 check'
-# -> build/arm/LeafSDTools.exe (QY8XXX), build/sh4/LeafSDTools.exe (QY7XXX)
-```
-
-GitHub Actions runs the same build on every push and pull request and
-uploads both executables as artifacts. The sources are compiled unchanged;
-what the toolchain lacks is supplied from `compat/`. One difference from the
-eVC4 build: structured exception handling (`__try`/`__except`) is compiled
-out.
-
-## Building a card image
-
-The card image starts from the upstream `LeafSDTools-111-beta.img` release.
-The CI workflow pins and verifies the upstream release archive SHA-256, then
-replaces `PRGUpdate.exe` in the QY8XXX ARM updater image and in both mirrored
-QY7XXX SH-4 updater banks. Other card contents are preserved. Run the `Build`
-workflow with `workflow_dispatch` or push a release tag to build the
-compressed `.img.gz` artifact and its `.sha256` file. Ordinary pushes build
-only the two executables.
-
-Locally, inside the same image (Python 3 is needed for the image builder):
-
-```sh
-make card-image BASE_IMAGE=build/LeafSDTools-base.img
-# -> build/LeafSDTools.img(.gz, .sha256)
-```
-
-The image builder verifies each PE machine type, locates both 10 MiB QY7XXX
-banks from their ROM signatures and places uncompressed module sections on
-4 KiB boundaries, as the Windows CE ROM loader requires.
+See [BUILDING.md](BUILDING.md).
