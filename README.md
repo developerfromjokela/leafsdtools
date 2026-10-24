@@ -78,10 +78,11 @@ out.
 The card image starts from the upstream `LeafSDTools-111-beta.img` release.
 The CI workflow pins and verifies the upstream release archive SHA-256, then
 replaces `PRGUpdate.exe` in the QY8XXX ARM updater image and in both mirrored
-QY7XXX SH-4 updater banks. Other card contents are preserved. Run the `Build`
-workflow with `workflow_dispatch` or push a release tag to build the
-compressed `.img.gz` artifact and its `.sha256` file. Ordinary pushes build
-only the two executables.
+QY7XXX SH-4 updater banks. Other card contents are preserved. Every pull
+request, push to `master` and tag builds the compressed `.img.gz` card image
+and its `.sha256` file as the `LeafSDTools-card-image` artifact, so a pull
+request can be tested on a unit straight from its checks page. Pushes to
+other branches start no build; open a pull request instead.
 
 Locally, inside the same image (Python 3 is needed for the image builder):
 
