@@ -54,5 +54,4 @@ TO EXIT THE PROGRAM:
 
 
 ## Building
-
 See [BUILDING.md](BUILDING.md).
