@@ -62,7 +62,7 @@ calling convention of the Microsoft SH-4 compiler), published as a Docker
 image:
 
 ```sh
-docker run --rm -v "$PWD":/w -w /w ghcr.io/palian-tech/cegcc:v9.3.0-ce.1 \
+docker run --rm -v "$PWD":/w -w /w ghcr.io/palian-tech/cegcc:v9.3.0-ce.3 \
   sh -c 'make TARGET=arm check && make TARGET=sh4 check'
 # -> build/arm/LeafSDTools.exe (QY8XXX), build/sh4/LeafSDTools.exe (QY7XXX)
 ```
