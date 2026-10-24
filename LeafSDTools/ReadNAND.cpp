@@ -82,6 +82,27 @@ void RunReadNAND(BOOL unattend) {
 				return;
 			}
 
+			DWORD maxSize = (NEW_NAV ? ((MAX_BLOCKS+1)*bufferSize) : ((MAX_BLOCKS-6) * bufferSize));
+
+			// The dump is written in full to the FAT volume of the SD card. If the
+			// volume is too small (for example, a previous dump is still on it), the
+			// write fails only at the very end. Check the free space up front.
+			ULARGE_INTEGER freeBytes;
+			freeBytes.QuadPart = 0;
+			if (GetDiskFreeSpaceEx(L"\\SystemSD\\", &freeBytes, NULL, NULL)) {
+				LogError(L"SD free MB", (HRESULT)(freeBytes.QuadPart >> 20));
+				if (freeBytes.QuadPart < (ULONGLONG)maxSize) {
+					PrintToScreen(1, "\nNot enough free space on SD:\n%u MB free, %u MB needed.\nDelete old nand_*.bin dumps and retry.",
+						(DWORD)(freeBytes.QuadPart >> 20), maxSize >> 20);
+					CloseHandle(hDevice);
+					free(buffer);
+					free(ioControlInput);
+					Sleep(8000);
+					WaitForScreenUntouch();
+					return;
+				}
+			}
+
 			// Open the destination file in binary write mode
 			file = fopen(fileName, "wb");
 			if (file == NULL)
@@ -95,13 +116,12 @@ void RunReadNAND(BOOL unattend) {
 				return;
 			}
 
-			DWORD maxSize = (NEW_NAV ? ((MAX_BLOCKS+1)*bufferSize) : ((MAX_BLOCKS-6) * bufferSize));
-
 			PrintToScreen(1, ">> 0000000 / %u", maxSize);
 
 			DWORD counter = 0;
 			DWORD byteCounter = 0;
 			DWORD blockSize = bufferSize;
+			bool readFailed = false;
 			do
 			{
 
@@ -116,7 +136,10 @@ void RunReadNAND(BOOL unattend) {
 											  buffer, blockSize, &bytesReturned, NULL);
 				if (!devIOResult)
 				{
-					PrintToScreen(1, "DeviceIoControl failed!");
+					readFailed = true;
+					LogError(L"ReadNAND: DeviceIoControl failed, block", counter);
+					LogError(L"ReadNAND: GetLastError", GetLastError());
+					PrintToScreen(1, "\nDeviceIoControl failed! block %u, E: 0x%08X", counter, GetLastError());
 					break;
 				}
 
@@ -124,7 +147,10 @@ void RunReadNAND(BOOL unattend) {
 				size_t bytesWritten = fwrite(buffer, 1, blockSize, file);
 				if (bytesWritten != blockSize)
 				{
-					PrintToScreen(1, "File write failed!");
+					readFailed = true;
+					LogError(L"ReadNAND: fwrite failed, block", counter);
+					LogError(L"ReadNAND: GetLastError", GetLastError());
+					PrintToScreen(1, "\nFile write failed! block %u (SD full?)", counter);
 					break;
 				}
 
@@ -135,11 +161,17 @@ void RunReadNAND(BOOL unattend) {
 				counter++;
 			} while (counter <= MAX_BLOCKS);
 
-			fclose(file);
+			if (fclose(file) != 0 && !readFailed) {
+				readFailed = true;
+				LogError(L"ReadNAND: fclose failed", GetLastError());
+			}
 			CloseHandle(hDevice);
 			free(buffer);
 			free(ioControlInput);
-			PrintToScreen(1, "\nDone. Read %u bytes", byteCounter);
+			if (readFailed)
+				PrintToScreen(1, "\nFAILED after %u bytes, dump is incomplete", byteCounter);
+			else
+				PrintToScreen(1, "\nDone. Read %u bytes", byteCounter);
 		}
 		Sleep(5000);
 	}
